@@ -1,8 +1,11 @@
+"use client";
+
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import Editor from "@monaco-editor/react";
 
 export default function Home() {
   return (
@@ -52,8 +55,21 @@ export default function Home() {
                 className="border-2 border-zinc-100 p-2 relative"
               >
                 <div className="h-full overflow-y-auto">
-                  <h3 className="font-semibold mb-2">Code Editor</h3>
-                  <div>Your code here...</div>
+                  <Editor
+                    height="100%"
+                    defaultLanguage="python"
+                    defaultValue="// Welcome to the code editor"
+                    theme={"vs-dark"}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      lineNumbers: "on",
+                      roundedSelection: false,
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                    }}
+                  />
+                  <h3 className="font-semibold mb-2 bg-inherit">Code Editor</h3>
                   <div className="absolute top-2 right-2 text-xs bg-zinc-100 px-2 py-1 rounded">
                     Commands
                   </div>
