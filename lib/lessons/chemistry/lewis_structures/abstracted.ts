@@ -75,7 +75,7 @@ export const abstractedCode = `
             tests.push({
               name: "Central Atom Selection",
               passed: centralIsOxygen,
-              message: centralIsOxygen ? "✓ Oxygen correctly identified as central" : \`✗ Wrong central atom: \${result.central_atom.name}\`
+              message: centralIsOxygen ? "✓ Oxygen correctly identified as central" : "✗ Wrong central atom: " + result.central_atom.name
             });
             
             // Test 3: Electron counting
@@ -83,7 +83,7 @@ export const abstractedCode = `
             tests.push({
               name: "Valence Electron Count",
               passed: totalValence === 8,
-              message: totalValence === 8 ? "✓ Correctly counted 8 valence electrons" : \`✗ Expected 8, got \${totalValence}\`
+              message: totalValence === 8 ? "✓ Correctly counted 8 valence electrons" : "✗ Expected 8, got " + totalValence
             });
             
             // Test 4: Bond formation
@@ -91,7 +91,7 @@ export const abstractedCode = `
             tests.push({
               name: "Bond Formation",
               passed: centralBonds === 2,
-              message: centralBonds === 2 ? "✓ Central atom has 2 bonds" : \`✗ Expected 2 bonds, got \${centralBonds}\`
+              message: centralBonds === 2 ? "✓ Central atom has 2 bonds" : "✗ Expected 2 bonds, got " + centralBonds
             });
             
             // Test 5: Electron distribution
@@ -108,7 +108,7 @@ export const abstractedCode = `
             tests.push({
               name: "Electron Conservation",
               passed: totalElectronsUsed === 8,
-              message: totalElectronsUsed === 8 ? "✓ All electrons properly distributed" : \`✗ Expected 8 electrons used, got \${totalElectronsUsed}\`
+              message: totalElectronsUsed === 8 ? "✓ All electrons properly distributed" : "✗ Expected 8 electrons used, got " + totalElectronsUsed
             });
             
             // Test 6: Octet satisfaction
@@ -128,14 +128,14 @@ export const abstractedCode = `
             tests.push({
               name: "Oxygen Octet Rule",
               passed: oxygenElectrons === 8,
-              message: oxygenElectrons === 8 ? "✓ Oxygen satisfies octet rule" : \`✗ Oxygen has \${oxygenElectrons} electrons, needs 8\`
+              message: oxygenElectrons === 8 ? "✓ Oxygen satisfies octet rule" : "✗ Oxygen has " + oxygenElectrons + " electrons, needs 8"
             });
             
-          } catch (error: any) {
+          } catch (error) {
             tests.push({
               name: "Algorithm Execution",
               passed: false,
-              message: \`✗ Runtime error: \${error.message}\`
+              message: "✗ Runtime error: " + error.message
             });
           }
           

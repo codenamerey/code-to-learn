@@ -14,14 +14,11 @@ import { CodeEditor } from "./components/codeeditor";
 import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/abstracted";
 import { lessonContent } from "@/lib/lessons/chemistry/lewis_structures/lesson";
 import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/code";
-import { Atom } from "@/lib/lessons/chemistry/lewis_structures/interfaces/atom.interface";
-import { Molecule } from "@/lib/lessons/chemistry/lewis_structures/interfaces/molecule.interface";
 
 export default function Home() {
   const [code, setCode] = useState(`${defaultCode}`);
 
   const [output, setOutput] = useState("");
-  const [moleculeData, setMoleculeData] = useState<Molecule | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [activeRenderer, setActiveRenderer] = useState("lewis");
 
@@ -44,15 +41,12 @@ export default function Home() {
       const data = await response.json();
 
       if (data.success) {
-        setMoleculeData(data.result);
         setOutput(data.output);
       } else {
         setOutput(data.output || `API Error: ${data.error}`);
-        setMoleculeData(null);
       }
     } catch (error) {
       setOutput(`Network Error: ${(error as Error).message}`);
-      setMoleculeData(null);
     }
     setIsExecuting(false);
   };
@@ -101,10 +95,10 @@ export default function Home() {
                       Toggle View
                     </button>
                   </div>
-                  <DynamicVisualizer
+                  {/* <DynamicVisualizer
                     data={moleculeData}
                     renderer={lewisStructureRenderer}
-                  />
+                  /> */}
                 </div>
               </ResizablePanel>
 
@@ -130,7 +124,7 @@ export default function Home() {
                 minSize={20}
                 className="border-2 border-zinc-100 p-0"
               >
-                <Output output={output} moleculeData={moleculeData} />
+                <Output output={output} />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>

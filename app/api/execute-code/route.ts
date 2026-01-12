@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
       testRunner,
       language = "javascript",
     }: ExecutionRequest = await request.json();
-
     if (!code || typeof code !== "string") {
       return NextResponse.json(
         {
@@ -86,6 +85,7 @@ async function executeJavaScript(
   testRunner?: string
 ): Promise<Response> {
   try {
+    console.log("test runner", testRunner);
     // Build execution context
     let executionCode = `
       // Capture console logs
@@ -118,7 +118,17 @@ async function executeJavaScript(
       
       ${abstractedCode}
       
-      ${code}
+      try {
+        ${code}
+      } catch (userError) {
+        console.error('Error in user code:', userError.message);
+        return {
+          result: null,
+          tests: [],
+          consoleOutput,
+          error: userError.message
+        };
+      }
       
       let result = null;
       let tests = [];
@@ -129,6 +139,12 @@ async function executeJavaScript(
           result = ${functionName || "main"}();
         } catch (e) {
           console.error('Error executing main function:', e.message);
+          return {
+            result: null,
+            tests: [],
+            consoleOutput,
+            error: e.message
+          };
         }
       }
       
@@ -157,51 +173,68 @@ async function executeJavaScript(
       return { result, tests, consoleOutput };
     `;
 
-    const func = new Function(executionCode);
-    const { result, tests, consoleOutput } = func();
+    let func;
+    try {
+      func = new Function(`${executionCode}`);
+    } catch (syntaxError) {
+      return NextResponse.json({
+        success: false,
+        error: `Syntax Error: ${(syntaxError as Error).message}`,
+        output: `Syntax Error: ${(syntaxError as Error).message}`,
+        result: null,
+      });
+    }
 
-    // Format output
+    console.log("Executing function...");
+
+    let execution;
+    try {
+      execution = func();
+    } catch (runtimeError) {
+      return NextResponse.json({
+        success: false,
+        error: `Runtime Error: ${(runtimeError as Error).message}`,
+        output: `Runtime Error: ${(runtimeError as Error).message}`,
+        result: null,
+      });
+    }
+
+    // Check if execution returned an error
+    if (execution.error) {
+      return NextResponse.json({
+        success: false,
+        error: execution.error,
+        output: execution.error,
+        result: null,
+        consoleOutput: execution.consoleOutput,
+      });
+    }
+
+    const { result, tests, consoleOutput } = execution;
+
+    // Format output - plain JavaScript output only
     let output = "";
 
     // Add console output
     if (consoleOutput && consoleOutput.length > 0) {
-      output += `=== CONSOLE OUTPUT ===\n`;
       consoleOutput.forEach(([type, ...args]: [string, ...string[]]) => {
-        const prefix = type === "error" ? "❌" : type === "warn" ? "⚠️" : ">";
-        output += `${prefix} ${args.join(" ")}\n`;
+        output += `${args.join(" ")}\n`;
       });
-      output += `\n`;
-    }
-
-    // Add test results if available
-    if (tests && tests.length > 0) {
-      const passedTests = tests.filter((t: any) => t.passed).length;
-      output += `=== UNIT TESTS ===\n`;
-      output += `Score: ${passedTests}/${tests.length}\n\n`;
-
-      tests.forEach((test: any) => {
-        output += `${test.passed ? "✅" : "❌"} ${test.name || "Test"}: ${
-          test.message || "No message"
-        }\n`;
-      });
-      output += `\n`;
     }
 
     // Add result if available
     if (result !== null && result !== undefined) {
-      output += `=== RESULT ===\n`;
       if (typeof result === "object") {
         output += JSON.stringify(result, null, 2);
       } else {
         output += String(result);
       }
-      output += `\n`;
     }
 
     return NextResponse.json({
       success: true,
       result,
-      output: output || "✅ Code executed successfully!",
+      output: output || "Code executed successfully",
       tests,
       consoleOutput,
     });
@@ -210,7 +243,7 @@ async function executeJavaScript(
       {
         success: false,
         error: (error as Error).message,
-        output: `❌ JavaScript Execution Error: ${(error as Error).message}`,
+        output: `Error: ${(error as Error).message}`,
         result: null,
       },
       { status: 500 }
