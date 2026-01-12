@@ -7,8 +7,26 @@ import {
 } from "@/components/ui/resizable";
 import Editor from "@monaco-editor/react";
 import { useState } from "react";
-import LewisStructureVisualizer from "@/components/LewisStructureVisualizer";
+import DynamicVisualizer from "@/components/DynamicVisualizer";
+import { lewisStructureRenderer, barChartRenderer } from "@/lib/renderers";
 import ReactMarkdown from "react-markdown";
+
+interface AtomData {
+  uuid: string;
+  valence: number;
+  electronegativity: number;
+  name: string;
+  bonds_to_neighbors: { [key: string]: number };
+  lone_pairs: number;
+  is_central: boolean;
+  is_terminal: boolean;
+  is_octet: boolean;
+}
+
+export interface MoleculeData {
+  atoms: AtomData[];
+  central_atom: AtomData;
+}
 
 export default function Home() {
   const [code, setCode] = useState(`function calculate_lewis_structure() {
@@ -78,11 +96,9 @@ export default function Home() {
 }`);
 
   const [output, setOutput] = useState("");
-  const [moleculeData, setMoleculeData] = useState<{
-    atoms: any[];
-    central_atom: any;
-  } | null>(null);
+  const [moleculeData, setMoleculeData] = useState<MoleculeData | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [activeRenderer, setActiveRenderer] = useState("lewis");
 
   const executeCode = () => {
     setIsExecuting(true);
@@ -221,7 +237,7 @@ export default function Home() {
               message: oxygenElectrons === 8 ? "✓ Oxygen satisfies octet rule" : \`✗ Oxygen has \${oxygenElectrons} electrons, needs 8\`
             });
             
-          } catch (error) {
+          } catch (error: any) {
             tests.push({
               name: "Algorithm Execution",
               passed: false,
@@ -263,15 +279,25 @@ export default function Home() {
         
         return { result, tests, consoleOutput };
       `);
-      
-      const { result, tests, consoleOutput } = func();
-      
+
+      const {
+        result,
+        tests,
+        consoleOutput,
+      }: {
+        result: MoleculeData;
+        tests: { name: string; passed: boolean; message: string }[];
+        consoleOutput: string[];
+      } = func();
+
       // Generate output with console logs first
-      const passedTests = tests.filter((t: any) => t.passed).length;
+      const passedTests = tests.filter(
+        (t: { passed: boolean }) => t.passed
+      ).length;
       const totalTests = tests.length;
-      
-      let output = '';
-      
+
+      let output = "";
+
       // Add console output first
       if (consoleOutput && consoleOutput.length > 0) {
         output += `=== CONSOLE OUTPUT ===\n`;
@@ -280,20 +306,22 @@ export default function Home() {
         });
         output += `\n`;
       }
-      
+
       // Add test results
       output += `=== UNIT TESTS ===\n`;
       output += `Score: ${passedTests}/${totalTests}\n\n`;
 
-      tests.forEach((test: any) => {
-        output += `${test.passed ? "✅" : "❌"} ${test.name}: ${
-          test.message
-        }\n`;
-      });
+      tests.forEach(
+        (test: { passed: boolean; name: string; message: string }) => {
+          output += `${test.passed ? "✅" : "❌"} ${test.name}: ${
+            test.message
+          }\n`;
+        }
+      );
 
       if (result && result.atoms && result.central_atom) {
         // Convert atoms to serializable format for visualization
-        const serializedAtoms = result.atoms.map((atom: any) => ({
+        const serializedAtoms = result.atoms.map((atom: AtomData) => ({
           uuid: atom.uuid,
           valence: atom.valence,
           electronegativity: atom.electronegativity,
@@ -333,8 +361,8 @@ ${output}`
         );
         setMoleculeData(null);
       }
-    } catch (error: any) {
-      setOutput(`❌ Error executing code: ${error.message}`);
+    } catch (error) {
+      setOutput(`❌ Error executing code: ${(error as Error).message}`);
       setMoleculeData(null);
     }
     setIsExecuting(false);
@@ -447,12 +475,22 @@ The algorithm must be general enough to handle different molecules!
                 className="border-2 border-zinc-100 p-2"
               >
                 <div className="h-full overflow-y-auto">
-                  <h3 className="font-semibold mb-2">
-                    Lewis Structure Visualizer
-                  </h3>
-                  <LewisStructureVisualizer
-                    atoms={moleculeData?.atoms || []}
-                    rootAtom={moleculeData?.central_atom || null}
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold">Visualizer</h3>
+                    <button
+                      onClick={() =>
+                        setActiveRenderer(
+                          activeRenderer === "lewis" ? "bar" : "lewis"
+                        )
+                      }
+                      className="px-3 py-1 bg-gray-200 text-gray-800 rounded text-sm hover:bg-gray-300"
+                    >
+                      Toggle View
+                    </button>
+                  </div>
+                  <DynamicVisualizer
+                    data={moleculeData}
+                    renderer={lewisStructureRenderer}
                   />
                 </div>
               </ResizablePanel>
@@ -508,72 +546,101 @@ The algorithm must be general enough to handle different molecules!
                   <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="font-semibold text-sm">Results</h3>
                   </div>
-                  
+
                   {/* Content */}
                   <div className="flex-1 overflow-hidden">
                     {output ? (
                       <div className="h-full overflow-y-auto">
                         {/* Success/Error Status */}
-                        <div className={`px-4 py-2 text-sm font-medium border-b ${
-                          output.includes('✅') 
-                            ? 'bg-green-50 text-green-800 border-green-200' 
-                            : 'bg-red-50 text-red-800 border-red-200'
-                        }`}>
-                          {output.includes('✅') ? '✅ Accepted' : '❌ Runtime Error'}
+                        <div
+                          className={`px-4 py-2 text-sm font-medium border-b ${
+                            output.includes("✅")
+                              ? "bg-green-50 text-green-800 border-green-200"
+                              : "bg-red-50 text-red-800 border-red-200"
+                          }`}
+                        >
+                          {output.includes("✅")
+                            ? "✅ Accepted"
+                            : "❌ Runtime Error"}
                         </div>
-                        
+
                         {/* Console Output Section */}
-                        {output.includes('=== CONSOLE OUTPUT ===') && (
+                        {output.includes("=== CONSOLE OUTPUT ===") && (
                           <div className="border-b border-gray-200">
                             <div className="bg-gray-50 px-4 py-1 text-xs font-medium text-gray-700 border-b border-gray-100">
                               Console
                             </div>
                             <div className="p-4">
                               <div className="bg-black text-green-400 p-3 rounded font-mono text-xs">
-                                {output.split('=== CONSOLE OUTPUT ===')[1]?.split('=== UNIT TESTS ===')[0]?.trim().split('\n').map((line, i) => (
-                                  <div key={i}>{line.replace(/^> /, '')}</div>
-                                ))}
+                                {output
+                                  .split("=== CONSOLE OUTPUT ===")[1]
+                                  ?.split("=== UNIT TESTS ===")[0]
+                                  ?.trim()
+                                  .split("\n")
+                                  .map((line, i) => (
+                                    <div key={i}>{line.replace(/^> /, "")}</div>
+                                  ))}
                               </div>
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Test Results Section */}
-                        {output.includes('=== UNIT TESTS ===') && (
+                        {output.includes("=== UNIT TESTS ===") && (
                           <div className="border-b border-gray-200">
                             <div className="bg-gray-50 px-4 py-1 text-xs font-medium text-gray-700 border-b border-gray-100">
                               Test Results
                             </div>
                             <div className="p-4">
                               <div className="space-y-2">
-                                {output.split('=== UNIT TESTS ===')[1]?.split('\n').filter(line => line.trim()).map((line, i) => {
-                                  if (line.startsWith('Score:')) {
-                                    return (
-                                      <div key={i} className="font-bold text-lg mb-3">
-                                        {line}
-                                      </div>
-                                    );
-                                  }
-                                  if (line.includes('✅') || line.includes('❌')) {
-                                    const [status, ...rest] = line.split(': ');
-                                    return (
-                                      <div key={i} className="flex items-start gap-2 py-1">
-                                        <span className={`text-sm ${line.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
-                                          {status}
-                                        </span>
-                                        <span className="text-sm text-gray-700 flex-1">
-                                          {rest.join(': ')}
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                })}
+                                {output
+                                  .split("=== UNIT TESTS ===")[1]
+                                  ?.split("\n")
+                                  .filter((line) => line.trim())
+                                  .map((line, i) => {
+                                    if (line.startsWith("Score:")) {
+                                      return (
+                                        <div
+                                          key={i}
+                                          className="font-bold text-lg mb-3"
+                                        >
+                                          {line}
+                                        </div>
+                                      );
+                                    }
+                                    if (
+                                      line.includes("✅") ||
+                                      line.includes("❌")
+                                    ) {
+                                      const [status, ...rest] =
+                                        line.split(": ");
+                                      return (
+                                        <div
+                                          key={i}
+                                          className="flex items-start gap-2 py-1"
+                                        >
+                                          <span
+                                            className={`text-sm ${
+                                              line.includes("✅")
+                                                ? "text-green-600"
+                                                : "text-red-600"
+                                            }`}
+                                          >
+                                            {status}
+                                          </span>
+                                          <span className="text-sm text-gray-700 flex-1">
+                                            {rest.join(": ")}
+                                          </span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })}
                               </div>
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Execution Info */}
                         {moleculeData && (
                           <div>
@@ -582,9 +649,27 @@ The algorithm must be general enough to handle different molecules!
                             </div>
                             <div className="p-4">
                               <div className="space-y-1 text-sm text-gray-600">
-                                <div>Central Atom: <span className="font-mono text-red-600">{moleculeData.central_atom.name}</span></div>
-                                <div>Total Atoms: <span className="font-mono">{moleculeData.atoms.length}</span></div>
-                                <div>Total Valence Electrons: <span className="font-mono">{moleculeData.atoms.reduce((sum, atom) => sum + atom.valence, 0)}</span></div>
+                                <div>
+                                  Central Atom:{" "}
+                                  <span className="font-mono text-red-600">
+                                    {moleculeData.central_atom.name}
+                                  </span>
+                                </div>
+                                <div>
+                                  Total Atoms:{" "}
+                                  <span className="font-mono">
+                                    {moleculeData.atoms.length}
+                                  </span>
+                                </div>
+                                <div>
+                                  Total Valence Electrons:{" "}
+                                  <span className="font-mono">
+                                    {moleculeData.atoms.reduce(
+                                      (sum, atom) => sum + atom.valence,
+                                      0
+                                    )}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -594,7 +679,9 @@ The algorithm must be general enough to handle different molecules!
                       <div className="h-full flex items-center justify-center text-gray-500">
                         <div className="text-center">
                           <div className="text-4xl mb-2">🚀</div>
-                          <div className="text-sm">Click "Run Algorithm" to see results</div>
+                          <div className="text-sm">
+                            Click "Run Algorithm" to see results
+                          </div>
                         </div>
                       </div>
                     )}
