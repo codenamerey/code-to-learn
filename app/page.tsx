@@ -48,7 +48,12 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({
+          code,
+          abstractedCode,
+          language: "javascript",
+          functionName: "calculate_lewis_structure",
+        }),
       });
 
       const data = await response.json();
@@ -57,11 +62,11 @@ export default function Home() {
         setMoleculeData(data.result);
         setOutput(data.output);
       } else {
-        setOutput(data.output || `❌ API Error: ${data.error}`);
+        setOutput(data.output || `API Error: ${data.error}`);
         setMoleculeData(null);
       }
     } catch (error) {
-      setOutput(`❌ Network Error: ${(error as Error).message}`);
+      setOutput(`Network Error: ${(error as Error).message}`);
       setMoleculeData(null);
     }
     setIsExecuting(false);
