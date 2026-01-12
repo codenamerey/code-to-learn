@@ -11,6 +11,7 @@ import DynamicVisualizer from "@/components/DynamicVisualizer";
 import { lewisStructureRenderer, barChartRenderer } from "@/lib/renderers";
 import ReactMarkdown from "react-markdown";
 import { Output } from "./components/output";
+import { CodeEditor } from "./components/codeeditor";
 
 interface AtomData {
   uuid: string;
@@ -503,36 +504,12 @@ The algorithm must be general enough to handle different molecules!
                 minSize={20}
                 className="border-2 border-zinc-100 p-2 relative"
               >
-                <div className="h-full flex flex-col">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-semibold">Lewis Structure Algorithm</h3>
-                    <button
-                      onClick={executeCode}
-                      disabled={isExecuting}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isExecuting ? "Running..." : "Run Algorithm"}
-                    </button>
-                  </div>
-                  <div className="flex-1">
-                    <Editor
-                      height="100%"
-                      defaultLanguage="javascript"
-                      value={code}
-                      onChange={(value) => setCode(value || "")}
-                      theme="vs-dark"
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 12,
-                        lineNumbers: "on",
-                        roundedSelection: false,
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                        wordWrap: "on",
-                      }}
-                    />
-                  </div>
-                </div>
+                <CodeEditor
+                  executeCode={executeCode}
+                  isExecuting={isExecuting}
+                  code={code}
+                  setCode={setCode}
+                />
               </ResizablePanel>
 
               <ResizableHandle />
