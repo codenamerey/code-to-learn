@@ -14,29 +14,14 @@ import { CodeEditor } from "./components/codeeditor";
 import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/abstracted";
 import { lessonContent } from "@/lib/lessons/chemistry/lewis_structures/lesson";
 import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/code";
-
-interface AtomData {
-  uuid: string;
-  valence: number;
-  electronegativity: number;
-  name: string;
-  bonds_to_neighbors: { [key: string]: number };
-  lone_pairs: number;
-  is_central: boolean;
-  is_terminal: boolean;
-  is_octet: boolean;
-}
-
-export interface MoleculeData {
-  atoms: AtomData[];
-  central_atom: AtomData;
-}
+import { Atom } from "@/lib/lessons/chemistry/lewis_structures/interfaces/atom.interface";
+import { Molecule } from "@/lib/lessons/chemistry/lewis_structures/interfaces/molecule.interface";
 
 export default function Home() {
   const [code, setCode] = useState(`${defaultCode}`);
 
   const [output, setOutput] = useState("");
-  const [moleculeData, setMoleculeData] = useState<MoleculeData | null>(null);
+  const [moleculeData, setMoleculeData] = useState<Molecule | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [activeRenderer, setActiveRenderer] = useState("lewis");
 
