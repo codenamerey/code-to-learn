@@ -1,4 +1,6 @@
+"use client";
 import Editor from "@monaco-editor/react";
+import { useTheme } from "next-themes";
 
 export function CodeEditor({
   executeCode,
@@ -11,9 +13,11 @@ export function CodeEditor({
   code: string;
   setCode: (code: string) => void;
 }) {
+  const { theme } = useTheme();
+
   return (
     <>
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col bg-white dark:bg-gray-700">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-semibold">Lewis Structure Algorithm</h3>
           <button
@@ -30,7 +34,7 @@ export function CodeEditor({
             defaultLanguage="javascript"
             value={code}
             onChange={(value) => setCode(value || "")}
-            theme="vs-dark"
+            theme={theme}
             options={{
               minimap: { enabled: false },
               fontSize: 12,
