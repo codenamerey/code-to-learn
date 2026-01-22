@@ -6,7 +6,7 @@ export const lessonContent = `# Lewis Structures I
 - Handle octet rule systematically
 - Create structures that work for multiple compounds
 
-## According to the lecture, here is the Lewis structure algorithm:
+## According to the lecture, this is the Lewis structure algorithm:
 
 **Step 1: Connect atoms, central often less electronegative**
 - Place the least electronegative atom in the center (except hydrogen)
