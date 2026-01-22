@@ -6,35 +6,32 @@ export const lessonContent = `# Lewis Structures I
 - Handle octet rule systematically
 - Create structures that work for multiple compounds
 
-## The Algorithm Steps
+## According to the lecture, here is the Lewis structure algorithm:
 
-**Step 1: Create atoms with correct valence electrons**
-- Each atom needs its valence electron count and electronegativity
+**Step 1: Connect atoms, central often less electronegative**
+- Place the least electronegative atom in the center (except hydrogen)
+- Place the remaining atoms around it (these are called terminal atoms)
 
-**Step 2: Find the central atom**
-- Usually the atom that can form the most bonds
-- Never hydrogen (can only form 1 bond)
-- Often the atom with the most valence electrons
-
-**Step 3: Count total valence electrons**
+**Step 2: Count total valence electrons**
 - Sum all valence electrons from all atoms
 - This determines how many electrons to distribute
 
-**Step 4: Form single bonds**
-- Connect central atom to all terminal atoms
+**Step 3: Place bonding pair of electrons between adjacent atoms**
+- Connect central atom to each terminal atom with a single bond
 - Each bond uses 2 electrons
 
-**Step 5: Satisfy terminal atom octets**
+**Step 4: Starting with terminal atoms, add electrons to each one to form octet
+(2 for H)**
+- Add lone pairs to terminal atoms until octet (or duet for H) is satisfied
+
+**Step 5: If electrons are left over, place on the central atom**
 - Give terminal atoms lone pairs to complete octets
 - Hydrogen needs 2 electrons total (duet rule)
 - Other atoms need 8 electrons total (octet rule)
 
-**Step 6: Place remaining electrons on central atom**
+**Step 6: If central atom hasn’t reached octet, use lone pairs from terminal atoms
+to form multiple bonds to the central atom to achieve octet**
 - Any leftover electrons become lone pairs on central atom
-
-**Step 7: Form multiple bonds if needed**
-- If central atom doesn't satisfy octet and terminal atoms have lone pairs
-- Convert terminal lone pairs to additional bonds
 
 ## Available Methods & Properties
 
@@ -44,6 +41,12 @@ atom.bond(other_atom)           // Create single bond
 check_octet(atom)              // Returns true if octet satisfied
 
 // Atom Properties (read/write)
+atom.uuid                      // Unique identifier
+atom.electronegativity         // Electronegativity value
+atom.lone_pairs                 // Number of lone pairs
+atom.is_central = true/false   // Mark as central atom
+atom.is_terminal = true/false  // Mark as terminal atom
+
 atom.valence                   // Number of valence electrons
 atom.name                      // Element symbol ('H', 'O', etc.)
 atom.lone_pairs = number       // Set lone pairs (0, 1, 2...)
