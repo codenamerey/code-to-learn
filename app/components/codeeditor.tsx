@@ -13,13 +13,12 @@ export function CodeEditor({
   code: string;
   setCode: (code: string) => void;
 }) {
-  const { theme } = useTheme();
-
+  const { resolvedTheme } = useTheme();
   return (
     <>
       <div className="h-full flex flex-col bg-white dark:bg-gray-700">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold">Lewis Structure Algorithm</h3>
+          <h3 className="font-semibold">Code Editor</h3>
           <button
             onClick={executeCode}
             disabled={isExecuting}
@@ -34,7 +33,7 @@ export function CodeEditor({
             defaultLanguage="javascript"
             value={code}
             onChange={(value) => setCode(value || "")}
-            theme={theme}
+            theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
             options={{
               minimap: { enabled: false },
               fontSize: 12,
