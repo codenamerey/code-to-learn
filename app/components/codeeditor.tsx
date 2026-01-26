@@ -27,7 +27,7 @@ export function CodeEditor({
             disabled={isExecuting}
             className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {isExecuting ? "Running..." : "Run Algorithm"}
+            {isExecuting ? "Running..." : "Run Snippet"}
           </button>
         </div>
         <div className="flex-1">
