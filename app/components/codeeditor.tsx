@@ -1,5 +1,6 @@
 "use client";
 import Editor from "@monaco-editor/react";
+import { CodeXml } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export function CodeEditor({
@@ -18,7 +19,9 @@ export function CodeEditor({
     <>
       <div className="h-full flex flex-col bg-white dark:bg-gray-700">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold">Code Editor</h3>
+          <h3>
+            <CodeXml />
+          </h3>
           <button
             onClick={executeCode}
             disabled={isExecuting}
