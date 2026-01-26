@@ -6,8 +6,6 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useState } from "react";
-import DynamicVisualizer from "@/components/DynamicVisualizer";
-import { lewisStructureRenderer, barChartRenderer } from "@/lib/renderers";
 import ReactMarkdown from "react-markdown";
 import { Output } from "./components/output";
 import { CodeEditor } from "./components/codeeditor";
@@ -65,8 +63,7 @@ export default function Home() {
         >
           <ResizablePanel defaultSize={30} minSize={20} className="p-2">
             <div className="h-full overflow-y-auto">
-              <h3 className="font-semibold mb-2">Lewis Structures I</h3>
-              <div className="prose prose-sm max-w-none">
+              <div className="markdown-content">
                 <ReactMarkdown>{lessonContent}</ReactMarkdown>
               </div>
             </div>
@@ -87,7 +84,7 @@ export default function Home() {
                     <button
                       onClick={() =>
                         setActiveRenderer(
-                          activeRenderer === "lewis" ? "bar" : "lewis"
+                          activeRenderer === "lewis" ? "bar" : "lewis",
                         )
                       }
                       className="px-3 py-1 bg-gray-200 text-gray-800 rounded text-sm hover:bg-gray-300"

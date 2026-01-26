@@ -44,6 +44,22 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --prose-body: var(--color-foreground);
+  --prose-headings: var(--color-foreground);
+  --prose-lead: var(--color-foreground);
+  --prose-links: var(--color-primary);
+  --prose-bold: var(--color-foreground);
+  --prose-counters: var(--color-muted-foreground);
+  --prose-bullets: var(--color-muted-foreground);
+  --prose-hr: var(--color-border);
+  --prose-quotes: var(--color-muted-foreground);
+  --prose-quote-borders: var(--color-border);
+  --prose-captions: var(--color-muted-foreground);
+  --prose-code: var(--color-foreground);
+  --prose-pre-code: var(--color-foreground);
+  --prose-pre-bg: var(--color-muted);
+  --prose-th-borders: var(--color-border);
+  --prose-td-borders: var(--color-border);
 }
 
 :root {
@@ -121,5 +137,94 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Custom prose styles for ReactMarkdown */
+  .markdown-content {
+    color: var(--color-foreground);
+    line-height: 1.7;
+  }
+  
+  .markdown-content h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    margin-top: 2rem;
+    color: var(--color-foreground);
+  }
+  
+  .markdown-content h2 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+    color: var(--color-foreground);
+  }
+  
+  .markdown-content h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+    color: var(--color-foreground);
+  }
+  
+  .markdown-content p {
+    margin-bottom: 1rem;
+    color: var(--color-foreground);
+  }
+  
+  .markdown-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .markdown-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .markdown-content li {
+    margin-bottom: 0.5rem;
+    color: var(--color-foreground);
+  }
+  
+  .markdown-content strong {
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+  
+  .markdown-content code {
+    background-color: var(--color-muted);
+    color: var(--color-foreground);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-family: var(--font-mono);
+  }
+  
+  .markdown-content pre {
+    background-color: var(--color-muted);
+    color: var(--color-foreground);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    font-family: var(--font-mono);
+  }
+  
+  .markdown-content pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  .markdown-content blockquote {
+    border-left: 4px solid var(--color-border);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: var(--color-muted-foreground);
+    font-style: italic;
   }
 }
