@@ -51,12 +51,8 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen items-center justify-center font-[overpass] bg-zinc-50 dark:bg-black">
-      
       <main className="flex-1 w-full p-4 overflow-auto">
-        <ResizablePanelGroup
-          orientation="horizontal"
-          className="h-full border-2 border-zinc-400"
-        >
+        <ResizablePanelGroup orientation="horizontal" className="h-full">
           <ResizablePanel defaultSize={30} minSize={20} className="p-2">
             <div className="h-full overflow-y-auto">
               <div className="markdown-content">
@@ -69,11 +65,7 @@ export default function Home() {
 
           <ResizablePanel defaultSize={70} minSize={30}>
             <ResizablePanelGroup orientation="vertical" className="h-full">
-              <ResizablePanel
-                defaultSize={33}
-                minSize={20}
-                className="border-2 border-zinc-100 p-2"
-              >
+              <ResizablePanel defaultSize={33} minSize={20} className="p-2">
                 <div className="h-full overflow-y-auto">
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="font-semibold">Visualizer</h3>
@@ -100,7 +92,7 @@ export default function Home() {
               <ResizablePanel
                 defaultSize={33}
                 minSize={20}
-                className="border-2 border-zinc-100 p-2 relative"
+                className="p-2 relative"
               >
                 <CodeEditor
                   executeCode={executeCode}
@@ -112,11 +104,7 @@ export default function Home() {
 
               <ResizableHandle />
 
-              <ResizablePanel
-                defaultSize={34}
-                minSize={20}
-                className="border-2 border-zinc-100 p-0"
-              >
+              <ResizablePanel defaultSize={34} minSize={20} className="p-0">
                 <Output output={output} />
               </ResizablePanel>
             </ResizablePanelGroup>
