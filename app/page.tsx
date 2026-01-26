@@ -51,11 +51,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen items-center justify-center font-[overpass] bg-zinc-50 dark:bg-black">
-      <header className="p-2">
-        <h1 className="text-5xl font-bold text-zinc-900 dark:text-white sm:text-6xl">
-          Code To Learn
-        </h1>
-      </header>
+      
       <main className="flex-1 w-full p-4 overflow-auto">
         <ResizablePanelGroup
           orientation="horizontal"
