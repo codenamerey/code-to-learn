@@ -31,7 +31,7 @@ export function FolderTabs({
   return (
     <Tabs
       defaultValue={initialTab}
-      className={cn("w-full min-h-full gap-0", className)}
+      className={cn("w-full h-full gap-0", className)}
     >
       <TabsList
         className={cn(
@@ -63,7 +63,7 @@ export function FolderTabs({
           value={tab.value}
           className={cn(
             "mt-0",
-            "rounded-b-lg rounded-x-lg border bg-background p-6 h-full shadow-sm",
+            "rounded-b-lg rounded-x-lg border bg-background p-6 h-full shadow-sm overflow-y-auto",
             contentClassName,
           )}
         >

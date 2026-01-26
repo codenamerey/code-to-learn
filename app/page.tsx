@@ -57,7 +57,7 @@ export default function Home() {
           className="h-full p-2 rounded-4xl"
         >
           <ResizablePanel defaultSize={640} minSize={20} className="p-2">
-            <div className="h-full w-full overflow-y-auto rounded-2xl p-0 markdown-content">
+            <div className="h-full w-full rounded-2xl p-0 markdown-content">
               <Lesson />
             </div>
           </ResizablePanel>
@@ -65,11 +65,14 @@ export default function Home() {
           <ResizableHandle />
 
           <ResizablePanel minSize={30} className="p-2">
-            <ResizablePanelGroup orientation="vertical" className="h-1/2 *:p-2">
+            <ResizablePanelGroup
+              orientation="vertical"
+              className="h-full *:p-2"
+            >
               <ResizablePanel>
                 <ResizablePanelGroup
                   orientation="horizontal"
-                  className="h-1/2 *:p-2"
+                  className="h-full *:p-2"
                 >
                   <ResizablePanel
                     defaultSize={33}
@@ -113,7 +116,7 @@ export default function Home() {
 
               <ResizableHandle />
 
-              <ResizablePanel minSize={20} className="p-0 h-1/2">
+              <ResizablePanel minSize={20} className="p-0">
                 <Output output={output} />
               </ResizablePanel>
             </ResizablePanelGroup>
