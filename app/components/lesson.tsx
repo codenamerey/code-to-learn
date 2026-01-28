@@ -5,12 +5,17 @@ import ReactMarkdown from "react-markdown";
 import { atomDocumentationData } from "@/lib/lessons/chemistry/lewis_structures/documentationdata";
 import { Hints } from "./hints";
 import { hintsData } from "@/lib/lessons/chemistry/lewis_structures/hints";
+import rehypeRaw from "rehype-raw";
 
 export function Lesson() {
   const items = [
     {
       title: "Lesson",
-      content: <ReactMarkdown>{lessonContent.lesson}</ReactMarkdown>,
+      content: (
+        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+          {lessonContent.lesson}
+        </ReactMarkdown>
+      ),
       value: "lesson",
       label: "Lesson",
     },
@@ -57,6 +62,9 @@ export function Lesson() {
 
 export const lessonContent = {
   lesson: `# Lewis Structures I
+## Video Tutorial
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/DvGNpuan4rw?list=PLUl4u3cNGP63z5HAguqleEbsICfHgDPaG" title="9. Lewis Structures I (Intro to Solid-State Chemistry)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Learning Objectives
 - Implement the complete Lewis structure algorithm
