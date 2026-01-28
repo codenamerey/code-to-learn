@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
           error: "Valid code string is required",
           output: "Error: No code provided",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           error: "Code cannot be empty",
           output: "Error: Please write some code before running",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         code,
         abstractedCode,
         functionName,
-        testRunner
+        testRunner,
       );
     } else {
       return NextResponse.json(
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           error: `Language ${language} not supported`,
           output: `Error: ${language} is not supported yet`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
   } catch (error) {
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         error: (error as Error).message,
         output: `Error: ${(error as Error).message}`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -82,7 +82,7 @@ async function executeJavaScript(
   code: string,
   abstractedCode: string = "",
   functionName?: string,
-  testRunner?: string
+  testRunner?: string,
 ): Promise<Response> {
   try {
     console.log("test runner", testRunner);
@@ -200,27 +200,25 @@ async function executeJavaScript(
     }
 
     // Check if execution returned an error
-    if (execution.error) {
-      return NextResponse.json({
-        success: false,
-        error: execution.error,
-        output: execution.error,
-        result: null,
-        consoleOutput: execution.consoleOutput,
-      });
-    }
-
-    const { result, tests, consoleOutput } = execution;
-
+    const { consoleOutput } = execution;
     // Format output - plain JavaScript output only
     let output = "";
-
     // Add console output
     if (consoleOutput && consoleOutput.length > 0) {
       consoleOutput.forEach(([type, ...args]: [string, ...string[]]) => {
         output += `${args.join(" ")}\n`;
       });
     }
+    if (execution.error) {
+      return NextResponse.json({
+        success: false,
+        error: execution.error,
+        output,
+        result: null,
+        consoleOutput: output,
+      });
+    }
+    const { result, tests } = execution;
 
     // Add result if available
     if (result !== null && result !== undefined) {
@@ -246,7 +244,7 @@ async function executeJavaScript(
         output: `Error: ${(error as Error).message}`,
         result: null,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
