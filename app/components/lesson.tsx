@@ -3,6 +3,8 @@ import { UnderscoreTabs } from "@/components/ui/underscoretabs";
 import { DocumentationTable } from "./documentationtable";
 import ReactMarkdown from "react-markdown";
 import { atomDocumentationData } from "@/lib/lessons/chemistry/lewis_structures/documentationdata";
+import { Hints } from "./hints";
+import { hintsData } from "@/lib/lessons/chemistry/lewis_structures/hints";
 
 export function Lesson() {
   const items = [
@@ -45,7 +47,7 @@ export function Lesson() {
     },
     {
       title: "Hints",
-      content: <ReactMarkdown>{lessonContent.hints}</ReactMarkdown>,
+      content: <Hints hints={hintsData} />,
       value: "hints",
       label: "Hints",
     },
@@ -99,8 +101,4 @@ Implement the algorithm that will work for:
 The algorithm must be general enough to handle different molecules!
 
 **Test molecule:** H₂O (valence electrons: H=1, H=1, O=6, total=8)`,
-  hints: `- Use \`console.log(atom.name, atom.valence)\` to check atom properties
-- Use \`console.log(atom.bonds_to_neighbors)\` to see all bonds
-- Use \`console.log(atom.lone_pairs)\` to verify lone pair assignment
-`,
 };
