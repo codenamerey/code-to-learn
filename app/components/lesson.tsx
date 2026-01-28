@@ -1,171 +1,10 @@
 import { FolderTabs } from "@/components/ui/foldertabs";
 import { UnderscoreTabs } from "@/components/ui/underscoretabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DocumentationTable } from "./documentationtable";
 import ReactMarkdown from "react-markdown";
-
-// Types for generalizable data structures
-interface MethodData {
-  method: string;
-  description: string;
-}
-
-interface PropertyData {
-  type: "Read/Write" | "Read-Only";
-  property: string;
-  description: string;
-}
-
-interface DocumentationTabData {
-  title: string;
-  methods?: MethodData[];
-  properties?: PropertyData[];
-}
-
-// Generalized component for rendering documentation tables
-function DocumentationTable({
-  title,
-  methods,
-  properties,
-}: DocumentationTabData) {
-  if (methods) {
-    return (
-      <div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Method</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {methods.map((method, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <code>{method.method}</code>
-                </TableCell>
-                <TableCell>{method.description}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  }
-
-  if (properties) {
-    return (
-      <div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Property</TableHead>
-              <TableHead>Description</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {properties.map((property, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      property.type === "Read/Write"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-green-100 text-green-800"
-                    }`}
-                  >
-                    {property.type}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <code>{property.property}</code>
-                </TableCell>
-                <TableCell>{property.description}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  }
-
-  return null;
-}
+import { atomDocumentationData } from "@/lib/lessons/chemistry/lewis_structures/documentationdata";
 
 export function Lesson() {
-  // Documentation data structure
-  const documentationData = {
-    methods: [
-      {
-        method: "atom.bond(other_atom)",
-        description: "Create single bond",
-      },
-      {
-        method: "check_octet(atom)",
-        description: "Returns true if octet satisfied",
-      },
-    ],
-    properties: [
-      {
-        type: "Read/Write" as const,
-        property: "atom.uuid",
-        description: "Unique identifier",
-      },
-      {
-        type: "Read/Write" as const,
-        property: "atom.lone_pairs",
-        description: "Number of lone pairs",
-      },
-      {
-        type: "Read/Write" as const,
-        property: "atom.is_central",
-        description: "Mark as central atom (true/false)",
-      },
-      {
-        type: "Read/Write" as const,
-        property: "atom.is_terminal",
-        description: "Mark as terminal atom (true/false)",
-      },
-      {
-        type: "Read/Write" as const,
-        property: "atom.valence",
-        description: "Number of valence electrons",
-      },
-      {
-        type: "Read/Write" as const,
-        property: "atom.name",
-        description: "Element symbol ('H', 'O', etc.)",
-      },
-      {
-        type: "Read-Only" as const,
-        property: "atom.bonds",
-        description: "Total number of bonds",
-      },
-      {
-        type: "Read-Only" as const,
-        property: "atom.bonds_to_neighbors",
-        description: "Object with bond details",
-      },
-      {
-        type: "Read-Only" as const,
-        property: "atom.electronegativity",
-        description: "Electronegativity value",
-      },
-      {
-        type: "Read-Only" as const,
-        property: "atom.is_octet",
-        description: "Whether octet rule satisfied",
-      },
-    ],
-  };
-
   const items = [
     {
       title: "Lesson",
@@ -184,7 +23,7 @@ export function Lesson() {
               content: (
                 <DocumentationTable
                   title="Atom Methods"
-                  methods={documentationData.methods}
+                  methods={atomDocumentationData.methods}
                 />
               ),
             },
@@ -194,7 +33,7 @@ export function Lesson() {
               content: (
                 <DocumentationTable
                   title="Atom Properties"
-                  properties={documentationData.properties}
+                  properties={atomDocumentationData.properties}
                 />
               ),
             },
