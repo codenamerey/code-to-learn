@@ -220,15 +220,6 @@ async function executeJavaScript(
     }
     const { result, tests } = execution;
 
-    // Add result if available
-    if (result !== null && result !== undefined) {
-      if (typeof result === "object") {
-        output += JSON.stringify(result, null, 2);
-      } else {
-        output += String(result);
-      }
-    }
-
     return NextResponse.json({
       success: true,
       result,
