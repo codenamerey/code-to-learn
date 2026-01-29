@@ -22,30 +22,56 @@ export function Lesson() {
     {
       title: "Documentation",
       content: (
-        <UnderscoreTabs
-          items={[
-            {
-              value: "methods",
-              label: "Methods",
-              content: (
-                <DocumentationTable
-                  title="Atom Methods"
-                  methods={atomDocumentationData.methods}
-                />
-              ),
-            },
-            {
-              value: "properties",
-              label: "Properties",
-              content: (
-                <DocumentationTable
-                  title="Atom Properties"
-                  properties={atomDocumentationData.properties}
-                />
-              ),
-            },
-          ]}
-        />
+        <>
+          <h1>Atom Class</h1>
+          <article>
+            <p>This class represents an atom in a molecule.</p>
+          </article>
+          <UnderscoreTabs
+            items={[
+              {
+                value: "methods",
+                label: "Methods",
+                content: (
+                  <DocumentationTable methods={atomDocumentationData.methods} />
+                ),
+              },
+              {
+                value: "properties",
+                label: "Properties",
+                content: (
+                  <DocumentationTable
+                    properties={atomDocumentationData.properties}
+                  />
+                ),
+              },
+            ]}
+          />
+          <h2>Usage:</h2>
+          <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
+            {`// Create atoms
+              let oxygen = new Atom('O', 6);
+              let hydrogen1 = new Atom('H', 1);
+              let hydrogen2 = new Atom('H', 1);
+
+              // Mark central and terminal atoms
+              oxygen.is_central = true;
+              hydrogen1.is_terminal = true;
+              hydrogen2.is_terminal = true;
+
+              // Form bonds
+              oxygen.bond(hydrogen1);
+              oxygen.bond(hydrogen2);
+
+              // Add lone pairs to oxygen
+              oxygen.lone_pairs = 2;
+
+              // Check octet status
+              console.log(oxygen.is_octet); // true
+              console.log(hydrogen1.is_octet); // true
+              console.log(hydrogen2.is_octet); // true`}
+          </pre>
+        </>
       ),
       value: "documentation",
       label: "Documentation",
@@ -63,6 +89,8 @@ export function Lesson() {
 export const lessonContent = {
   lesson: `# Lewis Structures I
 ## Video Tutorial
+
+Watch this video from 4:04 to 11:03
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/DvGNpuan4rw?list=PLUl4u3cNGP63z5HAguqleEbsICfHgDPaG" title="9. Lewis Structures I (Intro to Solid-State Chemistry)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
