@@ -42,7 +42,7 @@ export function CodeEditor({
               fontSize: 12,
               lineNumbers: "on",
               roundedSelection: false,
-              scrollBeyondLastLine: false,
+              scrollBeyondLastLine: true,
               automaticLayout: true,
               wordWrap: "on",
             }}
