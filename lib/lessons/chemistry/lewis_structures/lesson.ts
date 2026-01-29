@@ -1,9 +1,9 @@
 export const lesson = `# Lewis Structures I
 ## Video Tutorial
 
-Watch this video from 4:04 to 11:03
+Watch this video from **4:04** to **11:03**
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/DvGNpuan4rw?list=PLUl4u3cNGP63z5HAguqleEbsICfHgDPaG" title="9. Lewis Structures I (Intro to Solid-State Chemistry)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/DvGNpuan4rw?start=244&end=663&list=PLUl4u3cNGP63z5HAguqleEbsICfHgDPaG" title="9. Lewis Structures I (Intro to Solid-State Chemistry)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Learning Objectives
 - Implement the complete Lewis structure algorithm
