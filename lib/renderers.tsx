@@ -1,6 +1,10 @@
-import { MoleculeData } from "@/app/page";
+// Legacy renderers - now enhanced with Observable Plot integration
+import { VisualizerRegistry } from "./visualizers/registry";
 
-interface Atom {
+// Import all visualizers to register them
+import "./visualizers";
+
+interface AtomData {
   uuid: string;
   valence: number;
   electronegativity: number;
@@ -10,6 +14,11 @@ interface Atom {
   is_central: boolean;
   is_terminal: boolean;
   is_octet: boolean;
+}
+
+interface MoleculeData {
+  atoms: AtomData[];
+  central_atom: AtomData;
 }
 
 export const lewisStructureRenderer = (data: MoleculeData | null) => {
@@ -95,12 +104,12 @@ export const lewisStructureRenderer = (data: MoleculeData | null) => {
                     y2={endPos.y + perpY * offset}
                     stroke="#4A5568"
                     strokeWidth={bondOrder > 1 ? "2" : "3"}
-                  />
+                  />,
                 );
               }
               return bonds;
-            }
-          )
+            },
+          ),
         )}
 
         {/* Draw atoms */}

@@ -7,6 +7,16 @@ import { Hints } from "./hints";
 import { hintsData } from "@/lib/lessons/chemistry/lewis_structures/hints";
 import rehypeRaw from "rehype-raw";
 import { lesson } from "@/lib/lessons/chemistry/lewis_structures/lesson";
+import { VisualizerRegistry } from "@/lib/visualizers/registry";
+
+// Import visualizers to ensure they are registered
+import "@/lib/visualizers";
+import DynamicVisualizer from "@/components/DynamicVisualizer";
+import { VisualizerBuilder } from "@/components/VisualizerBuilder";
+import { useState } from "react";
+
+// Import visualizers to register them
+import "@/lib/visualizers";
 
 export function Lesson() {
   const items = [

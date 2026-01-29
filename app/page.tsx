@@ -9,16 +9,20 @@ import { useState } from "react";
 import { Output } from "./components/output";
 import { CodeEditor } from "./components/codeeditor";
 import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/abstracted";
-import { lessonContent } from "@/lib/lessons/chemistry/lewis_structures/lesson";
 import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/code";
 import { Lesson } from "./components/lesson";
+import DynamicVisualizer from "@/components/DynamicVisualizer";
+import { VisualizerBuilder } from "@/components/VisualizerBuilder";
+
+// Import visualizers to register them
+import "@/lib/visualizers";
 
 export default function Home() {
   const [code, setCode] = useState(`${defaultCode}`);
-
   const [output, setOutput] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
-  const [activeRenderer, setActiveRenderer] = useState("lewis");
+  const [moleculeData, setMoleculeData] = useState(null);
+  const [showBuilder, setShowBuilder] = useState(false);
 
   const executeCode = async () => {
     setIsExecuting(true);
@@ -40,11 +44,17 @@ export default function Home() {
 
       if (data.success) {
         setOutput(data.output);
+        // Try to extract molecule data from the result
+        if (data.result) {
+          setMoleculeData(data.result);
+        }
       } else {
         setOutput(data.output || `API Error: ${data.error}`);
+        setMoleculeData(null);
       }
     } catch (error) {
       setOutput(`Network Error: ${(error as Error).message}`);
+      setMoleculeData(null);
     }
     setIsExecuting(false);
   };
@@ -93,22 +103,13 @@ export default function Home() {
                     className="p-2 bg-white rounded-xl"
                   >
                     <div className="h-full overflow-y-auto rounded-xl">
-                      <div className="flex items-center mb-2">
-                        <button
-                          onClick={() =>
-                            setActiveRenderer(
-                              activeRenderer === "lewis" ? "bar" : "lewis",
-                            )
-                          }
-                          className="px-3 py-1 bg-gray-200 text-gray-800 rounded-xl text-sm hover:bg-gray-300 ml-auto"
-                        >
-                          Toggle View
-                        </button>
+                      <div className="h-full">
+                        <DynamicVisualizer
+                          data={moleculeData}
+                          category="chemistry"
+                          allowVisualizerSwitch={true}
+                        />
                       </div>
-                      {/* <DynamicVisualizer
-                    data={moleculeData}
-                    renderer={lewisStructureRenderer}
-                  /> */}
                     </div>
                   </ResizablePanel>
                 </ResizablePanelGroup>
