@@ -25,12 +25,12 @@ export const atomDocumentationData = {
               console.log(hydrogen2.is_octet); // true`,
   methods: [
     {
-      method: "bond(other_atom)",
+      method: "bond(Atom other_atom, number bond_order=1)",
       description: "Create single bond",
       returnType: "void",
     },
     {
-      method: "check_octet(atom)",
+      method: "check_octet(Atom atom)",
       description: "Returns true if octet satisfied",
       returnType: "boolean",
     },
