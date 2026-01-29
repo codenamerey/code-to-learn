@@ -54,7 +54,6 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
               // Count lone pair electrons
               totalElectronsUsed += atom.lone_pairs * 2;
             });
-            totalElectronsUsed /= 2; // Each bond counted twice
             
             tests.push({
               name: "Electron Conservation",

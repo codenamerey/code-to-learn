@@ -21,7 +21,7 @@ export default function Home() {
   const [output, setOutput] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [moleculeData, setMoleculeData] = useState(null);
-  const [showBuilder, setShowBuilder] = useState(false);
+  const [tests, setTests] = useState<any[] | null>(null);
 
   const executeCode = async () => {
     setIsExecuting(true);
@@ -41,13 +41,14 @@ export default function Home() {
       });
 
       const data = await response.json();
-
+      console.log;
       if (data.success) {
         setOutput(data.output);
         // Try to extract molecule data from the result
         if (data.result) {
           setMoleculeData(data.result);
         }
+        setTests(data.tests);
       } else {
         setOutput(data.output || `API Error: ${data.error}`);
         setMoleculeData(null);
@@ -118,7 +119,7 @@ export default function Home() {
               <ResizableHandle />
 
               <ResizablePanel minSize={20} className="p-0">
-                <Output output={output} />
+                <Output output={output} tests={tests} />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
