@@ -1,4 +1,9 @@
-export const lessonContent = `# Lewis Structures I
+export const lesson = `# Lewis Structures I
+## Video Tutorial
+
+Watch this video from 4:04 to 11:03
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/DvGNpuan4rw?list=PLUl4u3cNGP63z5HAguqleEbsICfHgDPaG" title="9. Lewis Structures I (Intro to Solid-State Chemistry)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Learning Objectives
 - Implement the complete Lewis structure algorithm
@@ -32,39 +37,6 @@ export const lessonContent = `# Lewis Structures I
 **Step 6: If central atom hasn’t reached octet, use lone pairs from terminal atoms
 to form multiple bonds to the central atom to achieve octet**
 - Any leftover electrons become lone pairs on central atom
-
-## Available Methods & Properties
-
-\`\`\`javascript
-// Atom Methods
-atom.bond(other_atom)           // Create single bond
-check_octet(atom)              // Returns true if octet satisfied
-
-// Atom Properties (read/write)
-atom.uuid                      // Unique identifier
-atom.electronegativity         // Electronegativity value
-atom.lone_pairs                 // Number of lone pairs
-atom.is_central = true/false   // Mark as central atom
-atom.is_terminal = true/false  // Mark as terminal atom
-
-atom.valence                   // Number of valence electrons
-atom.name                      // Element symbol ('H', 'O', etc.)
-atom.lone_pairs = number       // Set lone pairs (0, 1, 2...)
-atom.is_central = true/false   // Mark as central atom
-atom.is_terminal = true/false  // Mark as terminal atom
-
-// Atom Properties (read-only)
-atom.bonds                     // Total number of bonds
-atom.bonds_to_neighbors        // Object with bond details
-atom.electronegativity         // Electronegativity value
-atom.uuid                      // Unique identifier
-atom.is_octet                  // Whether octet rule satisfied
-\`\`\`
-
-**Debugging Tips:**
-- Use \`console.log(atom.name, atom.valence)\` to check atom properties
-- Use \`console.log(atom.bonds_to_neighbors)\` to see all bonds
-- Use \`console.log(atom.lone_pairs)\` to verify lone pair assignment
 
 ## Your Challenge
 
