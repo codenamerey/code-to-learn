@@ -18,15 +18,17 @@ export const abstractedCode = `
           }
 
           bond(other_atom, bond_order = 1) {
-            const current_bond_self = this.bonds_to_neighbors[other_atom.uuid] || 0;
-            const current_bond_other = other_atom.bonds_to_neighbors[this.uuid] || 0;
+            // Generate a unique UUID for this bond
+            const bondUUID = Math.random().toString(36).substr(2, 9);
+            
+            // Both atoms reference the same bond UUID
+            this.bonds_to_neighbors[bondUUID] = bond_order;
+            other_atom.bonds_to_neighbors[bondUUID] = bond_order;
 
-            this.bonds_to_neighbors[other_atom.uuid] = current_bond_self + bond_order;
-            other_atom.bonds_to_neighbors[this.uuid] = current_bond_other + bond_order;
-
+            // Update total bond counts for both atoms
             this.bonds = Object.values(this.bonds_to_neighbors).reduce((a, b) => a + b, 0);
             other_atom.bonds = Object.values(other_atom.bonds_to_neighbors).reduce((a, b) => a + b, 0);
-            return true;
+            return bondUUID; // Return the bond UUID for reference if needed
           }
         }
 
