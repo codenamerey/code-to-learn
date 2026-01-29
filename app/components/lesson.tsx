@@ -22,9 +22,9 @@ export function Lesson() {
       title: "Documentation",
       content: (
         <>
-          <h1>Atom Class</h1>
+          <h1>{atomDocumentationData.className}</h1>
           <article>
-            <p>This class represents an atom in a molecule.</p>
+            <p>{atomDocumentationData.description}</p>
           </article>
           <UnderscoreTabs
             items={[
@@ -47,29 +47,11 @@ export function Lesson() {
             ]}
           />
           <h2>Usage:</h2>
-          <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-            {`// Create atoms
-              let oxygen = new Atom('O', 6);
-              let hydrogen1 = new Atom('H', 1);
-              let hydrogen2 = new Atom('H', 1);
-
-              // Mark central and terminal atoms
-              oxygen.is_central = true;
-              hydrogen1.is_terminal = true;
-              hydrogen2.is_terminal = true;
-
-              // Form bonds
-              oxygen.bond(hydrogen1);
-              oxygen.bond(hydrogen2);
-
-              // Add lone pairs to oxygen
-              oxygen.lone_pairs = 2;
-
-              // Check octet status
-              console.log(oxygen.is_octet); // true
-              console.log(hydrogen1.is_octet); // true
-              console.log(hydrogen2.is_octet); // true`}
-          </pre>
+          <ReactMarkdown>
+            {`\`\`\`javascript
+            ${atomDocumentationData.usage}
+            \`\`\``}
+          </ReactMarkdown>
         </>
       ),
       value: "documentation",
