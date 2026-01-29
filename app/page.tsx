@@ -12,10 +12,9 @@ import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/abstrac
 import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/code";
 import { Lesson } from "./components/lesson";
 import DynamicVisualizer from "@/components/DynamicVisualizer";
-import { VisualizerBuilder } from "@/components/VisualizerBuilder";
-
 // Import visualizers to register them
 import "@/lib/visualizers";
+import { testRunner } from "@/lib/lessons/chemistry/lewis_structures/unittests";
 
 export default function Home() {
   const [code, setCode] = useState(`${defaultCode}`);
@@ -37,6 +36,7 @@ export default function Home() {
           abstractedCode,
           language: "javascript",
           functionName: "calculate_lewis_structure",
+          testRunner,
         }),
       });
 

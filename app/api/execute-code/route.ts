@@ -85,7 +85,6 @@ async function executeJavaScript(
   testRunner?: string,
 ): Promise<Response> {
   try {
-    console.log("test runner", testRunner);
     // Build execution context
     let executionCode = `
       // Capture console logs
@@ -153,8 +152,8 @@ async function executeJavaScript(
         testRunner
           ? `
         try {
-          if (typeof runTests === 'function') {
-            tests = runTests(${
+          if (typeof ${testRunner} === 'function') {
+            tests = ${testRunner}(${
               functionName ? `() => ${functionName}()` : "main"
             });
           }
@@ -219,7 +218,7 @@ async function executeJavaScript(
       });
     }
     const { result, tests } = execution;
-
+    console.log("tests", tests);
     return NextResponse.json({
       success: true,
       result,
