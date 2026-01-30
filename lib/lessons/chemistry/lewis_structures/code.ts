@@ -11,8 +11,5 @@ export const defaultCode = `function calculate_lewis_structure(atoms) {
   
   // Step 6: Verify octet rule for all atoms
   
-  return {
-    atoms: atoms,
-    central_atom: central_atom
-  };
+  return atoms;
 }`;

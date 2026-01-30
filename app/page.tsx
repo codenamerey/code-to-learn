@@ -41,11 +41,12 @@ export default function Home() {
       });
 
       const data = await response.json();
-      console.log;
+      console.log("API Response:", data);
       if (data.success) {
         setOutput(data.output);
         // Try to extract molecule data from the result
         if (data.result) {
+          console.log("Setting molecule data:", data.result);
           setMoleculeData(data.result);
         }
         setTests(data.tests);
