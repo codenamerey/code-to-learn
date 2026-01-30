@@ -1,86 +1,102 @@
 export const abstractedCode = `
-        class Atom {
-          constructor(valence, electronegativity, name = 'Unknown') {
-            this.uuid = Math.random().toString(36).substr(2, 9);
-            this.valence = valence;
-            this.electronegativity = electronegativity;
-            this.bonds = 0;
-            this.name = name;
-            this.bonds_to_neighbors = {};
-            this.lone_electrons = 0;
-            this.is_central = false;
-            this.is_terminal = false;
-          }
+class Atom {
+  /**
+   * @param {number} valenceElectrons - Number of electrons in the outer shell (e.g., C=4, O=6).
+   * @param {number} electronegativity - Pauling scale value.
+   * @param {string} name - Chemical symbol.
+   */
+  constructor(valenceElectrons, electronegativity, name = 'Unknown') {
+    this.uuid = Math.random().toString(36).substr(2, 9);
+    this.valenceElectrons = valenceElectrons; // Total electrons available
+    this.electronegativity = electronegativity;
+    this.name = name;
+    
+    // State tracking
+    this.bonds_to_neighbors = {}; // { bondUUID: bondOrder }
+    this.lone_electrons = valenceElectrons; // Initially, all valence electrons are lone
+    this.is_central = false;
+    this.is_terminal = false;
+  }
 
-          get is_octet() {
-            let total_electrons_around_atom = 0;
-            
-            Object.values(this.bonds_to_neighbors).forEach(bond_order => {
-              total_electrons_around_atom += bond_order * 2;
-            });
-            
-            total_electrons_around_atom += this.lone_electrons;
+  /**
+   * Calculates the total electrons associated with the atom.
+   * Total = (Sum of Bond Orders * 2) + Lone Electrons
+   */
+  get total_electron_count() {
+    let bonding_electrons = Object.values(this.bonds_to_neighbors).reduce((sum, order) => sum + (order * 2), 0);
+    return bonding_electrons + this.lone_electrons;
+  }
 
-            if (this.name === 'H' || this.valence === 1) {
-              return total_electrons_around_atom >= 2;
-            } else {
-              return total_electrons_around_atom >= 8;
-            }
-          }
+  /**
+   * Formal Charge = Valence Electrons - [Lone Electrons + (Bonding Electrons / 2)]
+   * In Lewis structures, Bonding Electrons / 2 is simply the sum of bond orders.
+   */
+  get formal_charge() {
+    let total_bond_order = Object.values(this.bonds_to_neighbors).reduce((sum, order) => sum + order, 0);
+    return this.valenceElectrons - (this.lone_electrons + total_bond_order);
+  }
 
-          get_neighbors() {
-            return Object.keys(this.bonds_to_neighbors);
-          }
+  /**
+   * Checks if the atom satisfies the Octet (or Duet) rule.
+   */
+  get is_octet() {
+    const count = this.total_electron_count;
+    if (this.name === 'H' || this.name === 'He') {
+      return count === 2;
+    }
+    return count === 8;
+  }
 
-          bond(other_atom, bond_order = 1) {
-            // Check if there's already a bond between these atoms
-            let existingBondUUID = null;
-            let current_bond_order = 0;
-            
-            for (let bondUUID of Object.keys(this.bonds_to_neighbors)) {
-              if (other_atom.bonds_to_neighbors[bondUUID] !== undefined) {
-                existingBondUUID = bondUUID;
-                current_bond_order = this.bonds_to_neighbors[bondUUID];
-                break;
-              }
-            }
-            
-            if (existingBondUUID) {
-              // Calculate electrons needed for bond upgrade
-              let electrons_needed = (bond_order - current_bond_order) * 2;
-              
-              // Remove lone electrons from both atoms (they become bonding electrons)
-              if (electrons_needed > 0) {
-                let electrons_from_each = electrons_needed / 2;
-                this.lone_electrons = Math.max(0, this.lone_electrons - electrons_from_each);
-                other_atom.lone_electrons = Math.max(0, other_atom.lone_electrons - electrons_from_each);
-              }
-              
-              // Upgrade existing bond
-              this.bonds_to_neighbors[existingBondUUID] = bond_order;
-              other_atom.bonds_to_neighbors[existingBondUUID] = bond_order;
-            } else {
-              // Create new bond - remove electrons for initial bond formation
-              let electrons_needed = bond_order * 2;
-              let electrons_from_each = electrons_needed / 2;
-              this.lone_electrons = Math.max(0, this.lone_electrons - electrons_from_each);
-              other_atom.lone_electrons = Math.max(0, other_atom.lone_electrons - electrons_from_each);
-              
-              // Create new bond
-              const bondUUID = Math.random().toString(36).substr(2, 9);
-              this.bonds_to_neighbors[bondUUID] = bond_order;
-              other_atom.bonds_to_neighbors[bondUUID] = bond_order;
-              existingBondUUID = bondUUID;
-            }
+  /**
+   * Forms or upgrades a covalent bond.
+   * @param {Atom} other_atom 
+   * @param {number} target_order - The desired bond order (1, 2, or 3).
+   */
+  bond(other_atom, target_order = 1) {
+    let bondUUID = null;
+    let current_order = 0;
 
-            // Update total bond counts for both atoms
-            this.bonds = Object.values(this.bonds_to_neighbors).reduce((a, b) => a + b, 0);
-            other_atom.bonds = Object.values(other_atom.bonds_to_neighbors).reduce((a, b) => a + b, 0);
-            return existingBondUUID; // Return the bond UUID for reference
-          }
-        }
+    // 1. Check for existing bond
+    for (let id of Object.keys(this.bonds_to_neighbors)) {
+      if (other_atom.bonds_to_neighbors[id] !== undefined) {
+        bondUUID = id;
+        current_order = this.bonds_to_neighbors[id];
+        break;
+      }
+    }
 
-        function check_octet(atom) {
-          return atom.is_octet;
-        }
+    const order_increase = target_order - current_order;
+    if (order_increase <= 0) return bondUUID;
+
+    // 2. Verify electron availability
+    // Each increase in bond order requires 1 electron from each atom
+    if (this.lone_electrons < order_increase || other_atom.lone_electrons < order_increase) {
+      throw new Error("Insufficient lone electrons to form/upgrade bond between " + this.name + " and " + other_atom.name);
+    }
+
+    // 3. Update electrons and bond order
+    if (!bondUUID) {
+      bondUUID = Math.random().toString(36).substr(2, 9);
+    }
+
+    this.lone_electrons -= order_increase;
+    other_atom.lone_electrons -= order_increase;
+
+    this.bonds_to_neighbors[bondUUID] = target_order;
+    other_atom.bonds_to_neighbors[bondUUID] = target_order;
+
+    return bondUUID;
+  }
+
+  get_neighbors() {
+    return Object.keys(this.bonds_to_neighbors);
+  }
+}
+
+/**
+ * Helper to check octet status
+ */
+function check_octet(atom) {
+  return atom.is_octet;
+}
       `;

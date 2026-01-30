@@ -9,7 +9,6 @@ export function Output({
   tests: any[] | null;
 }) {
   // Helper function to create test result tabs
-
   const passedCount = useMemo(() => {
     if (!tests) return 0;
     return tests.filter((test) => test.passed).length;
@@ -33,7 +32,7 @@ export function Output({
 
     return tests.map((test, index) => ({
       value: `test-${index}`,
-      label: test.name,
+      label: test.title,
       className: test.passed
         ? "text-green-600 dark:text-green-400 data-[state=active]:border-green-500 data-[state=active]:text-green-600 hover:text-green-500"
         : "text-red-600 dark:text-red-400 data-[state=active]:border-red-500 data-[state=active]:text-red-600 hover:text-red-500",
