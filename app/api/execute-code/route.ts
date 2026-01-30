@@ -141,6 +141,12 @@ async function executeJavaScript(
             new Atom(6, 3.5, 'O'),
             new Atom(1, 2.1, 'H')
           ];
+          
+          // Add UUIDs to atoms
+          demoAtoms.forEach((atom, index) => {
+            atom.uuid = 'atom-' + index;
+          });
+          
           result = ${functionName || "main"}(demoAtoms);
         } catch (e) {
           console.error('Error executing main function:', e.message);
@@ -157,9 +163,10 @@ async function executeJavaScript(
       ${
         testRunner
           ? `
+        ${testRunner}
         try {
-          if (typeof ${testRunner} === 'function') {
-            tests = ${testRunner}(${functionName || "main"});
+          if (typeof runTests === 'function') {
+            tests = runTests(${functionName || "main"});
           }
         } catch (e) {
           console.error('Error running tests:', e.message);
@@ -173,7 +180,15 @@ async function executeJavaScript(
       console.error = originalError;
       console.warn = originalWarn;
       
-      return { result, tests, consoleOutput };
+      // Serialize result to plain objects (strips class instances, preserves enumerable properties)
+      let serializedResult = null;
+      try {
+        serializedResult = JSON.parse(JSON.stringify(result));
+      } catch (e) {
+        console.error('Error serializing result:', e);
+      }
+      
+      return { result: serializedResult, tests, consoleOutput };
     `;
 
     let func;
