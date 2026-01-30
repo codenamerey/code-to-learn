@@ -10,7 +10,7 @@ interface AtomData {
   electronegativity: number;
   name: string;
   bonds_to_neighbors: { [key: string]: number };
-  lone_pairs: number;
+  lone_electrons: number;
   is_central: boolean;
   is_terminal: boolean;
   is_octet: boolean;
@@ -139,8 +139,8 @@ export const lewisStructureRenderer = (data: MoleculeData | null) => {
                 {atom.name}
               </text>
 
-              {/* Lone pairs */}
-              {atom.lone_pairs > 0 && (
+              {/* Lone electrons */}
+              {atom.lone_electrons > 0 && (
                 <text
                   x={pos.x}
                   y={pos.y - 40}
@@ -149,7 +149,7 @@ export const lewisStructureRenderer = (data: MoleculeData | null) => {
                   fill="#7C3AED"
                   fontWeight="bold"
                 >
-                  LP: {atom.lone_pairs}
+                  LE: {atom.lone_electrons}
                 </text>
               )}
 
@@ -170,7 +170,7 @@ export const lewisStructureRenderer = (data: MoleculeData | null) => {
 
       <div className="mt-2 text-xs text-gray-500">
         <div>Red = Central Atom, Blue = Terminal Atom</div>
-        <div>LP = Lone Pairs, Bond thickness = Bond order</div>
+        <div>LE = Lone Electrons, Bond thickness = Bond order</div>
       </div>
     </div>
   );

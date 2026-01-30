@@ -6,7 +6,7 @@ interface AtomData {
   electronegativity: number;
   name: string;
   bonds_to_neighbors: { [key: string]: number };
-  lone_pairs: number;
+  lone_electrons: number;
   is_central: boolean;
   is_terminal: boolean;
   is_octet: boolean;
@@ -99,12 +99,12 @@ const LewisStructureVisualizer: React.FC<LewisStructureVisualizerProps> = ({
                     y2={endPos.y + perpY * offset}
                     stroke="#4A5568"
                     strokeWidth={bondOrder > 1 ? "2" : "3"}
-                  />
+                  />,
                 );
               }
               return bonds;
-            }
-          )
+            },
+          ),
         )}
 
         {/* Draw atoms */}
@@ -134,8 +134,8 @@ const LewisStructureVisualizer: React.FC<LewisStructureVisualizerProps> = ({
                 {atom.name}
               </text>
 
-              {/* Lone pairs */}
-              {atom.lone_pairs > 0 && (
+              {/* Lone electrons */}
+              {atom.lone_electrons > 0 && (
                 <text
                   x={pos.x}
                   y={pos.y - 40}
@@ -144,7 +144,7 @@ const LewisStructureVisualizer: React.FC<LewisStructureVisualizerProps> = ({
                   fill="#7C3AED"
                   fontWeight="bold"
                 >
-                  LP: {atom.lone_pairs}
+                  LE: {atom.lone_electrons}
                 </text>
               )}
 
@@ -165,7 +165,7 @@ const LewisStructureVisualizer: React.FC<LewisStructureVisualizerProps> = ({
 
       <div className="mt-2 text-xs text-gray-500">
         <div>Red = Central Atom, Blue = Terminal Atom</div>
-        <div>LP = Lone Pairs, Bond thickness = Bond order</div>
+        <div>LE = Lone Electrons, Bond thickness = Bond order</div>
       </div>
     </div>
   );

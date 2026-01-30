@@ -8,7 +8,7 @@ interface AtomData {
   electronegativity: number;
   name: string;
   bonds_to_neighbors: { [key: string]: number };
-  lone_pairs: number;
+  lone_electrons: number;
   is_central: boolean;
   is_terminal: boolean;
   is_octet: boolean;
@@ -44,40 +44,64 @@ const transformMoleculeData = (data: MoleculeData) => {
   });
 
   // Prepare atom data with positions
-  const atomsWithPositions = data.atoms.map((atom) => ({
-    ...atom,
-    x: positions[atom.uuid]?.x || 0,
-    y: positions[atom.uuid]?.y || 0,
-    type: atom.is_central ? "central" : "terminal",
-    total_electrons:
-      Object.values(atom.bonds_to_neighbors).reduce(
-        (sum, bonds) => sum + bonds,
-        0,
-      ) *
-        2 +
-      atom.lone_pairs * 2,
-  }));
+  const atomsWithPositions = data.atoms.map((atom) => {
+    // Calculate if atom satisfies octet rule
+    const totalElectronsAroundAtom = Object.values(atom.bonds_to_neighbors).reduce(
+      (sum, bonds) => sum + bonds * 2,
+      0,
+    ) + atom.lone_electrons;
+    
+    const satisfiesOctet = atom.name === 'H' || atom.valence === 1 
+      ? totalElectronsAroundAtom >= 2  // Duet rule for hydrogen
+      : totalElectronsAroundAtom >= 8; // Octet rule for others
+    
+    return {
+      ...atom,
+      x: positions[atom.uuid]?.x || 0,
+      y: positions[atom.uuid]?.y || 0,
+      type: atom.is_central ? "central" : "terminal",
+      total_electrons: totalElectronsAroundAtom,
+      calculated_is_octet: satisfiesOctet, // Use our calculated value
+    };
+  });
 
   // Prepare bond data
   const bonds: any[] = [];
+  const processedBonds = new Set(); // Track processed bonds to avoid duplicates
+  
   data.atoms.forEach((atom) => {
     Object.entries(atom.bonds_to_neighbors).forEach(
-      ([neighborUuid, bondOrder]) => {
-        // Avoid duplicate bonds by checking uuid order
-        if (atom.uuid > neighborUuid) return;
+      ([bondUuid, bondOrder]) => {
+        // Skip if we've already processed this bond
+        if (processedBonds.has(bondUuid)) return;
+        processedBonds.add(bondUuid);
 
-        const neighbor = data.atoms.find((a) => a.uuid === neighborUuid);
+        // Find the neighbor atom that shares this bond
+        const neighbor = data.atoms.find((otherAtom) => 
+          otherAtom.uuid !== atom.uuid && 
+          otherAtom.bonds_to_neighbors[bondUuid] !== undefined
+        );
+        
         if (!neighbor) return;
 
         const startPos = positions[atom.uuid];
-        const endPos = positions[neighborUuid];
+        const endPos = positions[neighbor.uuid];
 
+        // Create multiple lines for multiple bonds (double, triple bonds)
         for (let i = 0; i < bondOrder; i++) {
+          // Offset multiple bond lines slightly for visual clarity
+          const offset = (i - (bondOrder - 1) / 2) * 3;
+          const dx = endPos.x - startPos.x;
+          const dy = endPos.y - startPos.y;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const offsetX = (-dy / length) * offset;
+          const offsetY = (dx / length) * offset;
+          
           bonds.push({
-            x1: startPos.x,
-            y1: startPos.y,
-            x2: endPos.x,
-            y2: endPos.y,
+            x1: startPos.x + offsetX,
+            y1: startPos.y + offsetY,
+            x2: endPos.x + offsetX,
+            y2: endPos.y + offsetY,
             bondOrder,
             bondIndex: i,
             atomPair: `${atom.name}-${neighbor.name}`,
@@ -154,13 +178,13 @@ const lewisStructurePlotRenderer = (data: MoleculeData) => {
         dy: 4,
       }),
 
-      // Lone pairs labels
+      // Lone electrons labels
       Plot.text(
-        atoms.filter((d) => d.lone_pairs > 0),
+        atoms.filter((d) => d.lone_electrons > 0),
         {
           x: "x",
           y: (d) => d.y - 40,
-          text: (d) => `LP: ${d.lone_pairs}`,
+          text: (d) => `LE: ${d.lone_electrons}`,
           fontSize: 10,
           fontWeight: "bold",
           fill: "#7C3AED",
@@ -172,9 +196,9 @@ const lewisStructurePlotRenderer = (data: MoleculeData) => {
       Plot.text(atoms, {
         x: "x",
         y: (d) => d.y + 40,
-        text: (d) => (d.is_octet ? "✓ Octet" : "✗ No Octet"),
+        text: (d) => (d.calculated_is_octet ? "✓ Octet" : "✗ No Octet"),
         fontSize: 8,
-        fill: (d) => (d.is_octet ? "#059669" : "#DC2626"),
+        fill: (d) => (d.calculated_is_octet ? "#059669" : "#DC2626"),
         textAnchor: "middle",
       }),
     ],
@@ -203,7 +227,7 @@ const lewisStructurePlotRenderer = (data: MoleculeData) => {
 
       <div className="mt-2 text-xs text-gray-500">
         <div>Red = Central Atom, Blue = Terminal Atom</div>
-        <div>LP = Lone Pairs, Bond thickness = Bond order</div>
+        <div>LE = Lone Electrons, Bond thickness = Bond order</div>
       </div>
     </div>
   );
@@ -236,7 +260,7 @@ const moleculeTableRenderer = (data: MoleculeData) => {
               Bonds
             </th>
             <th className="border border-gray-300 px-3 py-2 text-left">
-              Lone Pairs
+              Lone Electrons
             </th>
             <th className="border border-gray-300 px-3 py-2 text-left">
               Octet
@@ -245,10 +269,18 @@ const moleculeTableRenderer = (data: MoleculeData) => {
         </thead>
         <tbody>
           {data.atoms.map((atom) => {
+            // Calculate total bond order (sum of all bond orders for this atom)
             const totalBonds = Object.values(atom.bonds_to_neighbors).reduce(
               (a, b) => a + b,
               0,
             );
+            
+            // Calculate if atom satisfies octet rule
+            const totalElectronsAroundAtom = totalBonds * 2 + atom.lone_electrons;
+            const satisfiesOctet = atom.name === 'H' || atom.valence === 1 
+              ? totalElectronsAroundAtom >= 2  // Duet rule for hydrogen
+              : totalElectronsAroundAtom >= 8; // Octet rule for others
+            
             return (
               <tr key={atom.uuid} className="hover:bg-gray-50">
                 <td className="border border-gray-300 px-3 py-2 font-semibold">
@@ -272,17 +304,17 @@ const moleculeTableRenderer = (data: MoleculeData) => {
                   {totalBonds}
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
-                  {atom.lone_pairs}
+                  {atom.lone_electrons}
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
                   <span
                     className={`px-2 py-1 rounded text-xs ${
-                      atom.is_octet
+                      satisfiesOctet
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {atom.is_octet ? "✓ Yes" : "✗ No"}
+                    {satisfiesOctet ? "✓ Yes" : "✗ No"}
                   </span>
                 </td>
               </tr>

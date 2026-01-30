@@ -135,7 +135,13 @@ async function executeJavaScript(
       // Try to execute main function if specified
       if (typeof ${functionName || "main"} === 'function') {
         try {
-          result = ${functionName || "main"}();
+          // Create H₂O atoms for demonstration in output tab
+          const demoAtoms = [
+            new Atom(1, 2.1, 'H'),
+            new Atom(6, 3.5, 'O'),
+            new Atom(1, 2.1, 'H')
+          ];
+          result = ${functionName || "main"}(demoAtoms);
         } catch (e) {
           console.error('Error executing main function:', e.message);
           return {
@@ -153,9 +159,7 @@ async function executeJavaScript(
           ? `
         try {
           if (typeof ${testRunner} === 'function') {
-            tests = ${testRunner}(${
-              functionName ? `() => ${functionName}()` : "main"
-            });
+            tests = ${testRunner}(${functionName || "main"});
           }
         } catch (e) {
           console.error('Error running tests:', e.message);

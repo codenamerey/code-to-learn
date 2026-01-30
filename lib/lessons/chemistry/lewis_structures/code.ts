@@ -1,27 +1,15 @@
-export const defaultCode = `function calculate_lewis_structure() {
-  // Create the atoms for H2O (water)
-  let hydrogen1 = new Atom(1, 2.1, 'H');
-  let hydrogen2 = new Atom(1, 2.1, 'H'); 
-  let oxygen = new Atom(6, 3.5, 'O');
+export const defaultCode = `function calculate_lewis_structure(atoms) {
+  // Step 1: Determine central atom
   
-  console.log("Created atoms:", hydrogen1.name, hydrogen2.name, oxygen.name);
+  // Step 2: Calculate total valence electrons
   
-  // Put all atoms in a list
-  let atoms = [hydrogen1, hydrogen2, oxygen];
+  // Step 3: Form single bonds between central and terminal atoms
   
-  for(let atom of atoms) {
-      // Step 1
-    
-      // Step 2
-      
-      // Step 3
-    
-      // Step 4
-    
-      // Step 5
-    
-      // Step 6
-  }
+  // Step 4: Distribute remaining electrons as lone pairs
+  
+  // Step 5: Form multiple bonds if needed for octet satisfaction
+  
+  // Step 6: Verify octet rule for all atoms
   
   return {
     atoms: atoms,

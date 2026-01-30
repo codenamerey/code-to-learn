@@ -2,12 +2,19 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
         function runTests(studentFunction) {
           const tests = [];
           
+          function getElectronegativity(element) {
+            const electronegativities = {
+              'H': 2.1, 'C': 2.5, 'N': 3.0, 'O': 3.5, 'F': 4.0, 'P': 2.1, 'S': 2.5, 'Cl': 3.0
+            };
+            return electronegativities[element] || 2.0;
+          }
+          
           // Test Case 1: H₂O (Water)
           try {
             const waterAtoms = [
-              { name: 'H', valence: 1 },
-              { name: 'O', valence: 6 },
-              { name: 'H', valence: 1 }
+              new Atom(1, getElectronegativity('H'), 'H'),
+              new Atom(6, getElectronegativity('O'), 'O'),
+              new Atom(1, getElectronegativity('H'), 'H')
             ];
             const waterResult = studentFunction(waterAtoms);
             
@@ -35,37 +42,37 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
                 waterErrors.push("Expected 2 bonds from oxygen, got " + oxygenBonds);
               }
               
-              // Check 2 lone pairs on oxygen
-              if (waterResult.central_atom.lone_pairs !== 2) {
+              // Check 4 lone electrons on oxygen (2 lone pairs)
+              if (waterResult.central_atom.lone_electrons !== 4) {
                 waterPassed = false;
-                waterErrors.push("Expected 2 lone pairs on oxygen, got " + waterResult.central_atom.lone_pairs);
+                waterErrors.push("Expected 4 lone electrons on oxygen, got " + waterResult.central_atom.lone_electrons);
               }
               
               // Check hydrogen atoms follow duet rule
               const hydrogens = waterResult.atoms.filter(a => a.name === 'H');
               const hydrogensSatisfied = hydrogens.every(h => {
                 const bondCount = Object.values(h.bonds_to_neighbors).reduce((sum, order) => sum + order, 0);
-                return bondCount === 1 && h.lone_pairs === 0;
+                return bondCount === 1 && h.lone_electrons === 0;
               });
               if (!hydrogensSatisfied) {
                 waterPassed = false;
-                waterErrors.push("Hydrogen atoms don't follow duet rule (1 bond, 0 lone pairs)");
+                waterErrors.push("Hydrogen atoms don't follow duet rule (1 bond, 0 lone electrons)");
               }
               
               // Check total electron count (8 valence electrons)
               let totalElectrons = 0;
-              let totalLonePairElectrons = 0;
+              let totalLoneElectrons = 0;
 
               let seenBonds = new Set();
               waterResult.atoms.forEach(atom => {
                 Object.keys(atom.bonds_to_neighbors).forEach(bondUUID => {
                   seenBonds.add(bondUUID);
                 });
-                totalLonePairElectrons += atom.lone_pairs * 2;
+                totalLoneElectrons += atom.lone_electrons;
               });
               
-              // Calculate total electrons: unique bonds * 2 + lone pair electrons
-              totalElectrons = seenBonds.size * 2 + totalLonePairElectrons;
+              // Calculate total electrons: unique bonds * 2 + lone electrons
+              totalElectrons = seenBonds.size * 2 + totalLoneElectrons;
               if (totalElectrons !== 8) {
                 waterPassed = false;
                 waterErrors.push("Expected 8 electrons total, got " + totalElectrons);
@@ -74,7 +81,7 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
               tests.push({
                 name: "H₂O Structure Test",
                 passed: waterPassed,
-                message: waterPassed ? "✓ H-O-H with 2 lone pairs on O correctly implemented" : "✗ H₂O errors: " + waterErrors.join(', ')
+                message: waterPassed ? "✓ H-O-H with 4 lone electrons on O correctly implemented" : "✗ H₂O errors: " + waterErrors.join(', ')
               });
             }
           } catch (error) {
@@ -88,9 +95,9 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
           // Test Case 2: CO₂ (Carbon Dioxide)
           try {
             const co2Atoms = [
-              { name: 'O', valence: 6 },
-              { name: 'C', valence: 4 },
-              { name: 'O', valence: 6 }
+              new Atom(6, getElectronegativity('O'), 'O'),
+              new Atom(4, getElectronegativity('C'), 'C'),
+              new Atom(6, getElectronegativity('O'), 'O')
             ];
             const co2Result = studentFunction(co2Atoms);
             
@@ -117,10 +124,10 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
                 co2Errors.push("Expected 2 bonds from carbon, got " + carbonBonds);
               }
               
-              // Check 0 lone pairs on carbon
-              if (co2Result.central_atom.lone_pairs !== 0) {
+              // Check 0 lone electrons on carbon
+              if (co2Result.central_atom.lone_electrons !== 0) {
                 co2Passed = false;
-                co2Errors.push("Expected 0 lone pairs on carbon, got " + co2Result.central_atom.lone_pairs);
+                co2Errors.push("Expected 0 lone electrons on carbon, got " + co2Result.central_atom.lone_electrons);
               }
               
               // Check oxygen atoms have double bonds (bond order 2)
@@ -136,18 +143,18 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
               
               // Check total electron count (16 valence electrons)
               let totalElectrons = 0;
-              let totalLonePairElectrons = 0;
+              let totalLoneElectrons = 0;
 
               let seenBonds = new Set();
               co2Result.atoms.forEach(atom => {
                 Object.keys(atom.bonds_to_neighbors).forEach(bondUUID => {
                   seenBonds.add(bondUUID);
                 });
-                totalLonePairElectrons += atom.lone_pairs * 2;
+                totalLoneElectrons += atom.lone_electrons;
               });
               
-              // Calculate total electrons: unique bonds * 2 + lone pair electrons  
-              totalElectrons = seenBonds.size * 2 + totalLonePairElectrons;
+              // Calculate total electrons: unique bonds * 2 + lone electrons  
+              totalElectrons = seenBonds.size * 2 + totalLoneElectrons;
               if (totalElectrons !== 16) {
                 co2Passed = false;
                 co2Errors.push("Expected 16 electrons total, got " + totalElectrons);
@@ -170,10 +177,10 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
           // Test Case 3: NH₃ (Ammonia)
           try {
             const nh3Atoms = [
-              { name: 'N', valence: 5 },
-              { name: 'H', valence: 1 },
-              { name: 'H', valence: 1 },
-              { name: 'H', valence: 1 }
+              new Atom(5, getElectronegativity('N'), 'N'),
+              new Atom(1, getElectronegativity('H'), 'H'),
+              new Atom(1, getElectronegativity('H'), 'H'),
+              new Atom(1, getElectronegativity('H'), 'H')
             ];
             const nh3Result = studentFunction(nh3Atoms);
             
@@ -200,37 +207,37 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
                 nh3Errors.push("Expected 3 bonds from nitrogen, got " + nitrogenBonds);
               }
               
-              // Check 1 lone pair on nitrogen
-              if (nh3Result.central_atom.lone_pairs !== 1) {
+              // Check 2 lone electrons on nitrogen (1 lone pair)
+              if (nh3Result.central_atom.lone_electrons !== 2) {
                 nh3Passed = false;
-                nh3Errors.push("Expected 1 lone pair on nitrogen, got " + nh3Result.central_atom.lone_pairs);
+                nh3Errors.push("Expected 2 lone electrons on nitrogen, got " + nh3Result.central_atom.lone_electrons);
               }
               
               // Check hydrogen atoms follow duet rule
               const hydrogens = nh3Result.atoms.filter(a => a.name === 'H');
               const hydrogensSatisfied = hydrogens.every(h => {
                 const bondCount = Object.values(h.bonds_to_neighbors).reduce((sum, order) => sum + order, 0);
-                return bondCount === 1 && h.lone_pairs === 0;
+                return bondCount === 1 && h.lone_electrons === 0;
               });
               if (!hydrogensSatisfied) {
                 nh3Passed = false;
-                nh3Errors.push("Hydrogen atoms don't follow duet rule (1 bond, 0 lone pairs)");
+                nh3Errors.push("Hydrogen atoms don't follow duet rule (1 bond, 0 lone electrons)");
               }
               
               // Check total electron count (8 valence electrons)
               let totalElectrons = 0;
-              let totalLonePairElectrons = 0;
+              let totalLoneElectrons = 0;
 
               let seenBonds = new Set();
               nh3Result.atoms.forEach(atom => {
                 Object.keys(atom.bonds_to_neighbors).forEach(bondUUID => {
                   seenBonds.add(bondUUID);
                 });
-                totalLonePairElectrons += atom.lone_pairs * 2;
+                totalLoneElectrons += atom.lone_electrons;
               });
               
-              // Calculate total electrons: unique bonds * 2 + lone pair electrons
-              totalElectrons = seenBonds.size * 2 + totalLonePairElectrons;
+              // Calculate total electrons: unique bonds * 2 + lone electrons
+              totalElectrons = seenBonds.size * 2 + totalLoneElectrons;
               if (totalElectrons !== 8) {
                 nh3Passed = false;
                 nh3Errors.push("Expected 8 electrons total, got " + totalElectrons);
@@ -239,7 +246,7 @@ export const testRunner = `// Unit tests for Lewis structure algorithm
               tests.push({
                 name: "NH₃ Structure Test",
                 passed: nh3Passed,
-                message: nh3Passed ? "✓ H₃N with 1 lone pair on N correctly implemented" : "✗ NH₃ errors: " + nh3Errors.join(', ')
+                message: nh3Passed ? "✓ H₃N with 2 lone electrons on N correctly implemented" : "✗ NH₃ errors: " + nh3Errors.join(', ')
               });
             }
           } catch (error) {
