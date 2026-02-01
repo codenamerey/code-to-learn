@@ -1,6 +1,9 @@
+import { Radical } from "lucide-react";
+
 export const categories = [
   {
     categoryName: "Math",
+    img: <Radical />,
     lessons: [
       {
         title: "Introduction to Algebra",
