@@ -141,12 +141,11 @@ async function executeJavaScript(
             new Atom(6, 3.5, 'O'),
             new Atom(1, 2.1, 'H')
           ];
-          
+
           // Add UUIDs to atoms
           demoAtoms.forEach((atom, index) => {
             atom.uuid = 'atom-' + index;
           });
-          
           result = ${functionName || "main"}(demoAtoms);
         } catch (e) {
           console.error('Error executing main function:', e.message);

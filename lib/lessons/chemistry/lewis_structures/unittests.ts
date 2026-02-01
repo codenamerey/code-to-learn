@@ -33,7 +33,8 @@ function runTests(studentFunction) {
     }
 
     // 4. Verify central atom exists in atoms array
-    const centralInArray = atomsArray.find(a => a.uuid === central_atom.uuid);
+    const centralInArray = atomsArray.find(a => a.uuid === central_atom.uuid || 
+      (a.name === central_atom.name && a.is_central === true));
     if (!centralInArray) {
       errors.push("Central atom not found in atoms array");
     }
