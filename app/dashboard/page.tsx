@@ -2,23 +2,62 @@
 import NavBar from "@/components/NavBar";
 import { Card, CardTitle } from "@/components/ui/card";
 import { categories } from "@/lib/categories/cetegories";
+import { Radical } from "lucide-react";
+import { useState } from "react";
+import { Scrollbars } from "react-custom-scrollbars";
 
 export default function Dashboard() {
+  const [activeCategory, setActiveCategory] = useState(1);
+  const handleCardClick = (cardId: number) => {
+    setActiveCategory(cardId);
+  };
+  // const handleCardClick;
   return (
     <section className="flex flex-col items-center bg-[#EAEAEA]">
       <NavBar title="Dashboard" />
       <section className=" w-[47%] border h-[120vh] pl-[24px] pt-[48px] bg-white rounded-lg">
         <h2 className="text-2xl pb-[16px]">Categories</h2>
-        <div className="flex gap-4 w-full border-1 overflow-x-auto">
-          {categories.map((category) => (
-            <Card>
-              {category.img}
-              <CardTitle className="text-center text-xl">
-                {category.categoryName}
-              </CardTitle>
-            </Card>
-          ))}
-        </div>
+        <Scrollbars
+          autoHeight
+          autoHeightMax={600} // optional max height for scroll
+          autoHide // hides scrollbar until hover
+          renderTrackVertical={(props) => (
+            <div {...props} className="w-1 rounded bg-transparent" /> // invisible track
+          )}
+          renderTrackHorizontal={(props) => (
+            <div {...props} className="h-1 rounded bg-transparent" /> // invisible track
+          )}
+        >
+          <div className="flex gap-4 w-full p-4 overflow-x-auto">
+            {categories.map((category, index) => (
+              <Card
+                key={category.id ?? index}
+                onClick={() => handleCardClick(category.id)}
+                className="flex flex-col items-center justify-between p-2 cursor-pointer transition-all duration-300 transform h-52"
+              >
+                <Radical
+                  className={`h-32 w-32 border rounded-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-lg  ${
+                    activeCategory === category.id
+                      ? "ring-2 ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
+                      : "shadow-md"
+                  }`}
+                />
+                {/* fixed-height container for title */}
+                <div className="h-10 flex items-center justify-center text-center">
+                  <CardTitle
+                    className={`text-lg transition-all duration-300 ${
+                      activeCategory === category.id
+                        ? "font-bold text-blue-600"
+                        : "text-gray-800"
+                    }`}
+                  >
+                    {category.categoryName}
+                  </CardTitle>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Scrollbars>
       </section>
     </section>
   );
