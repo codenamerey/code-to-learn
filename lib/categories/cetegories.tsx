@@ -3,7 +3,7 @@ import { Radical } from "lucide-react";
 export const categories = [
   {
     categoryName: "Math",
-    img: <Radical />,
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
     lessons: [
       {
         title: "Introduction to Algebra",
@@ -40,5 +40,50 @@ export const categories = [
         learnCount: 10007,
       },
     ],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
+  },
+  {
+    categoryName: "Math",
+    img: <Radical className="h-[144px] w-[144px] border rounded-lg" />,
+    lessons: [],
   },
 ];
