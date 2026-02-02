@@ -189,4 +189,45 @@ export const categories = [
       },
     ],
   },
+  {
+    id: 6,
+    categoryName: "Cybersecurity",
+    lessons: [
+      {
+        title: "Introduction to Cybersecurity",
+        description:
+          "Learn the basics of protecting systems, networks, and data.",
+        author: "Prof. Schneier",
+        learnCount: 8321,
+      },
+      {
+        title: "Network Security",
+        description:
+          "Understand firewalls, VPNs, and secure network protocols.",
+        author: "Dr. Stallings",
+        learnCount: 7540,
+      },
+      {
+        title: "Ethical Hacking",
+        description:
+          "Learn penetration testing and vulnerability assessments ethically.",
+        author: "Ms. Mitnick",
+        learnCount: 6895,
+      },
+      {
+        title: "Cryptography Basics",
+        description:
+          "Explore encryption, decryption, and secure communication.",
+        author: "Dr. Diffie",
+        learnCount: 7203,
+      },
+      {
+        title: "Cybersecurity Tools",
+        description:
+          "Hands-on with security tools, monitoring, and incident response.",
+        author: "Prof. Anderson",
+        learnCount: 6712,
+      },
+    ],
+  },
 ];

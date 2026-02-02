@@ -11,23 +11,12 @@ export default function Dashboard() {
   const handleCardClick = (cardId: number) => {
     setActiveCategory(cardId);
   };
-  // const handleCardClick;
   return (
     <section className="flex flex-col items-center bg-[#EAEAEA]">
       <NavBar title="Dashboard" />
       <section className=" w-[47%] border h-[120vh] pl-[24px] pt-[48px] bg-white rounded-lg">
-        <h2 className="text-2xl pb-[16px]">Categories</h2>
-        <Scrollbars
-          autoHeight
-          autoHeightMax={600} // optional max height for scroll
-          autoHide // hides scrollbar until hover
-          renderTrackVertical={(props) => (
-            <div {...props} className="w-1 rounded bg-transparent" /> // invisible track
-          )}
-          renderTrackHorizontal={(props) => (
-            <div {...props} className="h-1 rounded bg-transparent" /> // invisible track
-          )}
-        >
+        <h2 className="text-2xl pb-[16px] font-bold">Categories</h2>
+        <Scrollbars autoHeight autoHeightMax={600} autoHide>
           <div className="flex gap-4 w-full p-4 overflow-x-auto">
             {categories.map((category, index) => (
               <Card
@@ -42,7 +31,6 @@ export default function Dashboard() {
                       : "shadow-md"
                   }`}
                 />
-                {/* fixed-height container for title */}
                 <div className="h-10 flex items-center justify-center text-center">
                   <CardTitle
                     className={`text-lg transition-all duration-300 ${
@@ -58,6 +46,24 @@ export default function Dashboard() {
             ))}
           </div>
         </Scrollbars>
+
+        <section className="pt-6">
+          <div className="flex gap-2 items-center">
+            <h2 className="text-2xl font-bold">Courses</h2>
+            <input type="text" className="border-2 rounded-md w-[295px]" />
+
+            <select id="fruits" name="fruits">
+              <option value="apple">Apple</option>
+              <option value="banana">Banana</option>
+              <option value="cherry">Cherry</option>
+              <option value="orange" selected>
+                Orange
+              </option>
+            </select>
+            <input type="checkbox" />
+            <h3 className="">Asc</h3>
+          </div>
+        </section>
       </section>
     </section>
   );
