@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { ActiveCategoryContext } from "../app/dashboard/page";
+import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
 import { categories } from "@/lib/categories/cetegories";
 import { Card, CardTitle, CardDescription } from "./ui/card";
 import { Brain } from "lucide-react";
