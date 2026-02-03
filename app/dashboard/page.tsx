@@ -1,28 +1,17 @@
 "use client";
+import LessonsSection from "@/components/LessonsSection";
 import NavBar from "@/components/NavBar";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { categories } from "@/lib/categories/cetegories";
 import { Brain, Radical } from "lucide-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Scrollbars } from "react-custom-scrollbars";
+import { createContext } from "react";
 
+export const ActiveCategoryContext = createContext<number>(1);
 export default function Dashboard() {
-  const renderLessons = (categoryId: number) => {
-    return categories[categoryId].lessons.map((lesson) => (
-      <Card className="w-full border border-black p-4">
-        <div className="flex gap-1 items-center">
-          <CardTitle className="text-xl font-bold">{lesson.title}</CardTitle>{" "}
-          <h2 className="text-[#0995BC] text-sm">{lesson.author}</h2>
-        </div>
-        <CardDescription>{lesson.description}</CardDescription>
-        <div className="flex gap-2 items-center">
-          <Brain className="opacity-[70%]" />
-          <CardDescription>{lesson.learnCount} Learned</CardDescription>
-        </div>
-      </Card>
-    ));
-  };
   const [activeCategory, setActiveCategory] = useState(1);
+
   const handleCardClick = (cardId: number) => {
     console.log(cardId);
     setActiveCategory(cardId);
@@ -73,9 +62,9 @@ export default function Dashboard() {
             />
           </div>
 
-          <section className="flex flex-col gap-2">
-            {renderLessons(activeCategory - 1)}
-          </section>
+          <ActiveCategoryContext.Provider value={activeCategory}>
+            <LessonsSection />
+          </ActiveCategoryContext.Provider>
         </section>
       </section>
     </section>
