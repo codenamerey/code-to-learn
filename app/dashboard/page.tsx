@@ -26,7 +26,7 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold">Courses</h2>
               <input
                 type="text"
-                className="border border-black rounded-md w-[295px] bg-[rgba(0,0,0,8%)]"
+                className="border border-black rounded-md w-[295px] bg-[rgba(0,0,0,8%)] pl-3"
                 placeholder="Find lessons..."
               />
             </div>

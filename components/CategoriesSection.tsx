@@ -21,7 +21,7 @@ export default function CategoriesSection({ onCardClick }: CardProps) {
             <Card
               key={category.id ?? index}
               onClick={() => onCardClick(category.id)}
-              className="flex flex-col items-center justify-between p-2 cursor-pointer transition-all duration-300 transform h-38"
+              className="flex flex-col items-center justify-between p-2 cursor-pointer transition-all duration-300 transform h-38 w-38 max-w-38"
             >
               <Radical
                 className={`h-22 w-22 border rounded-lg transition-all duration-500 hover:-translate-y-1 hover:scale-105 hover:shadow-lg  ${
@@ -40,7 +40,6 @@ export default function CategoriesSection({ onCardClick }: CardProps) {
                 >
                   {category.categoryName}
                 </CardTitle>
-                {category.id}
               </div>
             </Card>
           ))}
