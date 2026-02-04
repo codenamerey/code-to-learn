@@ -4,24 +4,24 @@ import * as Plot from "@observablehq/plot";
 
 interface AtomData {
   uuid: string;
-  valence: number;
+  valenceElectrons: number;
   electronegativity: number;
   name: string;
-  bonds_to_neighbors: { [key: string]: number };
-  lone_electrons: number;
-  is_central: boolean;
-  is_terminal: boolean;
-  is_octet: boolean;
+  bondsToNeighbors: { [key: string]: number };
+  loneElectrons: number;
+  isCentral: boolean;
+  isTerminal: boolean;
+  isOctet: boolean;
 }
 
 interface MoleculeData {
   atoms: AtomData[];
-  central_atom: AtomData;
+  centralAtom: AtomData;
 }
 
 // Transform molecule data for Observable Plot
 const transformMoleculeData = (data: MoleculeData) => {
-  if (!data || !data.central_atom || !data.atoms)
+  if (!data || !data.centralAtom || !data.atoms)
     return { atoms: [], bonds: [] };
 
   const centerX = 200;
@@ -30,10 +30,10 @@ const transformMoleculeData = (data: MoleculeData) => {
 
   // Calculate positions
   const positions: { [key: string]: { x: number; y: number } } = {};
-  positions[data.central_atom.uuid] = { x: centerX, y: centerY };
+  positions[data.centralAtom.uuid] = { x: centerX, y: centerY };
 
   const terminalAtoms = data.atoms.filter(
-    (atom) => atom.uuid !== data.central_atom.uuid,
+    (atom) => atom.uuid !== data.centralAtom.uuid,
   );
   terminalAtoms.forEach((atom, index) => {
     const angle = (2 * Math.PI * index) / terminalAtoms.length;
@@ -46,20 +46,22 @@ const transformMoleculeData = (data: MoleculeData) => {
   // Prepare atom data with positions
   const atomsWithPositions = data.atoms.map((atom) => {
     // Calculate if atom satisfies octet rule
-    const totalElectronsAroundAtom = Object.values(atom.bonds_to_neighbors).reduce(
-      (sum, bonds) => sum + bonds * 2,
-      0,
-    ) + atom.lone_electrons;
-    
-    const satisfiesOctet = atom.name === 'H' || atom.valence === 1 
-      ? totalElectronsAroundAtom >= 2  // Duet rule for hydrogen
-      : totalElectronsAroundAtom >= 8; // Octet rule for others
-    
+    const totalElectronsAroundAtom =
+      Object.values(atom.bondsToNeighbors).reduce(
+        (sum, bonds) => sum + bonds * 2,
+        0,
+      ) + atom.loneElectrons;
+
+    const satisfiesOctet =
+      atom.name === "H" || atom.valenceElectrons === 1
+        ? totalElectronsAroundAtom >= 2 // Duet rule for hydrogen
+        : totalElectronsAroundAtom >= 8; // Octet rule for others
+
     return {
       ...atom,
       x: positions[atom.uuid]?.x || 0,
       y: positions[atom.uuid]?.y || 0,
-      type: atom.is_central ? "central" : "terminal",
+      type: atom.isCentral ? "central" : "terminal",
       total_electrons: totalElectronsAroundAtom,
       calculated_is_octet: satisfiesOctet, // Use our calculated value
     };
@@ -68,47 +70,46 @@ const transformMoleculeData = (data: MoleculeData) => {
   // Prepare bond data
   const bonds: any[] = [];
   const processedBonds = new Set(); // Track processed bonds to avoid duplicates
-  
+
   data.atoms.forEach((atom) => {
-    Object.entries(atom.bonds_to_neighbors).forEach(
-      ([bondUuid, bondOrder]) => {
-        // Skip if we've already processed this bond
-        if (processedBonds.has(bondUuid)) return;
-        processedBonds.add(bondUuid);
+    Object.entries(atom.bondsToNeighbors).forEach(([bondUuid, bondOrder]) => {
+      // Skip if we've already processed this bond
+      if (processedBonds.has(bondUuid)) return;
+      processedBonds.add(bondUuid);
 
-        // Find the neighbor atom that shares this bond
-        const neighbor = data.atoms.find((otherAtom) => 
-          otherAtom.uuid !== atom.uuid && 
-          otherAtom.bonds_to_neighbors[bondUuid] !== undefined
-        );
-        
-        if (!neighbor) return;
+      // Find the neighbor atom that shares this bond
+      const neighbor = data.atoms.find(
+        (otherAtom) =>
+          otherAtom.uuid !== atom.uuid &&
+          otherAtom.bondsToNeighbors[bondUuid] !== undefined,
+      );
 
-        const startPos = positions[atom.uuid];
-        const endPos = positions[neighbor.uuid];
+      if (!neighbor) return;
 
-        // Create multiple lines for multiple bonds (double, triple bonds)
-        for (let i = 0; i < bondOrder; i++) {
-          // Offset multiple bond lines slightly for visual clarity
-          const offset = (i - (bondOrder - 1) / 2) * 3;
-          const dx = endPos.x - startPos.x;
-          const dy = endPos.y - startPos.y;
-          const length = Math.sqrt(dx * dx + dy * dy);
-          const offsetX = (-dy / length) * offset;
-          const offsetY = (dx / length) * offset;
-          
-          bonds.push({
-            x1: startPos.x + offsetX,
-            y1: startPos.y + offsetY,
-            x2: endPos.x + offsetX,
-            y2: endPos.y + offsetY,
-            bondOrder,
-            bondIndex: i,
-            atomPair: `${atom.name}-${neighbor.name}`,
-          });
-        }
-      },
-    );
+      const startPos = positions[atom.uuid];
+      const endPos = positions[neighbor.uuid];
+
+      // Create multiple lines for multiple bonds (double, triple bonds)
+      for (let i = 0; i < bondOrder; i++) {
+        // Offset multiple bond lines slightly for visual clarity
+        const offset = (i - (bondOrder - 1) / 2) * 3;
+        const dx = endPos.x - startPos.x;
+        const dy = endPos.y - startPos.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const offsetX = (-dy / length) * offset;
+        const offsetY = (dx / length) * offset;
+
+        bonds.push({
+          x1: startPos.x + offsetX,
+          y1: startPos.y + offsetY,
+          x2: endPos.x + offsetX,
+          y2: endPos.y + offsetY,
+          bondOrder,
+          bondIndex: i,
+          atomPair: `${atom.name}-${neighbor.name}`,
+        });
+      }
+    });
   });
 
   return { atoms: atomsWithPositions, bonds };
@@ -116,7 +117,7 @@ const transformMoleculeData = (data: MoleculeData) => {
 
 // Lewis Structure Diagram using Observable Plot
 const lewisStructurePlotRenderer = (data: MoleculeData) => {
-  if (!data || !data.central_atom || data.atoms.length === 0) {
+  if (!data || !data.centralAtom || data.atoms.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
@@ -127,101 +128,177 @@ const lewisStructurePlotRenderer = (data: MoleculeData) => {
     );
   }
 
-  const { atoms, bonds } = transformMoleculeData(data);
-
-  const spec = {
-    width: 400,
-    height: 300,
-    x: { domain: [0, 400], axis: null },
-    y: { domain: [0, 300], axis: null },
-    marks: [
-      // Background
-      Plot.rect([{}], {
-        x1: 0,
-        x2: 400,
-        y1: 0,
-        y2: 300,
-        fill: "white",
-        stroke: "#e5e7eb",
-        strokeWidth: 1,
-      }),
-
-      // Bonds - use Plot.link for line segments
-      Plot.link(bonds, {
-        x1: "x1",
-        y1: "y1",
-        x2: "x2",
-        y2: "y2",
-        stroke: "#4A5568",
-        strokeWidth: (d) => (d.bondOrder > 1 ? 2 : 3),
-      }),
-
-      // Atoms (circles)
-      Plot.circle(atoms, {
-        x: "x",
-        y: "y",
-        r: 25,
-        fill: (d) => (d.is_central ? "#EF4444" : "#3B82F6"),
-        stroke: "#1F2937",
-        strokeWidth: 2,
-      }),
-
-      // Atom labels
-      Plot.text(atoms, {
-        x: "x",
-        y: "y",
-        text: "name",
-        fontSize: 14,
-        fontWeight: "bold",
-        fill: "white",
-        textAnchor: "middle",
-        dy: 4,
-      }),
-
-      // Lone electrons labels
-      Plot.text(
-        atoms.filter((d) => d.lone_electrons > 0),
-        {
-          x: "x",
-          y: (d) => d.y - 40,
-          text: (d) => `LE: ${d.lone_electrons}`,
-          fontSize: 10,
-          fontWeight: "bold",
-          fill: "#7C3AED",
-          textAnchor: "middle",
-        },
-      ),
-
-      // Octet status
-      Plot.text(atoms, {
-        x: "x",
-        y: (d) => d.y + 40,
-        text: (d) => (d.calculated_is_octet ? "✓ Octet" : "✗ No Octet"),
-        fontSize: 8,
-        fill: (d) => (d.calculated_is_octet ? "#059669" : "#DC2626"),
-        textAnchor: "middle",
-      }),
-    ],
-  };
-
   return (
     <div className="h-full flex flex-col">
       <div className="mb-2 text-sm text-gray-600">
         <div>
           Central Atom:{" "}
           <span className="font-semibold text-red-600">
-            {data.central_atom.name}
+            {data.centralAtom.name}
           </span>
         </div>
         <div>
           Total Valence Electrons:{" "}
-          {data.atoms.reduce((sum, atom) => sum + atom.valence, 0)}
+          {data.atoms.reduce((sum, atom) => sum + atom.valenceElectrons, 0)}
         </div>
       </div>
 
       <ObservablePlotRenderer
-        data={null}
-        spec={spec}
+        data={data}
+        spec={{
+          createSpec: (width: number, height: number) => {
+            // Calculate responsive positions
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.25;
+
+            const positions: { [key: string]: { x: number; y: number } } = {};
+            positions[data.centralAtom.uuid] = { x: centerX, y: centerY };
+
+            const terminalAtoms = data.atoms.filter(
+              (atom) => atom.uuid !== data.centralAtom.uuid,
+            );
+            terminalAtoms.forEach((atom, index) => {
+              const angle = (2 * Math.PI * index) / terminalAtoms.length;
+              positions[atom.uuid] = {
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle),
+              };
+            });
+
+            // Prepare atom data with positions
+            const atomsWithPositions = data.atoms.map((atom) => {
+              const totalElectronsAroundAtom =
+                Object.values(atom.bondsToNeighbors).reduce(
+                  (sum, bonds) => sum + bonds * 2,
+                  0,
+                ) + atom.loneElectrons;
+
+              const satisfiesOctet =
+                atom.name === "H" || atom.valenceElectrons === 1
+                  ? totalElectronsAroundAtom >= 2
+                  : totalElectronsAroundAtom >= 8;
+
+              return {
+                ...atom,
+                x: positions[atom.uuid]?.x || 0,
+                y: positions[atom.uuid]?.y || 0,
+                calculated_is_octet: satisfiesOctet,
+              };
+            });
+
+            // Prepare bond data
+            const bonds: any[] = [];
+            const processedBonds = new Set();
+
+            data.atoms.forEach((atom) => {
+              Object.entries(atom.bondsToNeighbors).forEach(
+                ([bondUuid, bondOrder]) => {
+                  if (processedBonds.has(bondUuid)) return;
+                  processedBonds.add(bondUuid);
+
+                  const neighbor = data.atoms.find(
+                    (otherAtom) =>
+                      otherAtom.uuid !== atom.uuid &&
+                      otherAtom.bondsToNeighbors[bondUuid] !== undefined,
+                  );
+
+                  if (!neighbor) return;
+
+                  const startPos = positions[atom.uuid];
+                  const endPos = positions[neighbor.uuid];
+
+                  for (let i = 0; i < bondOrder; i++) {
+                    const offset = (i - (bondOrder - 1) / 2) * 3;
+                    const dx = endPos.x - startPos.x;
+                    const dy = endPos.y - startPos.y;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const offsetX = (-dy / length) * offset;
+                    const offsetY = (dx / length) * offset;
+
+                    bonds.push({
+                      x1: startPos.x + offsetX,
+                      y1: startPos.y + offsetY,
+                      x2: endPos.x + offsetX,
+                      y2: endPos.y + offsetY,
+                      bondOrder,
+                    });
+                  }
+                },
+              );
+            });
+
+            // Responsive sizing
+            const atomRadius = Math.min(width, height) * 0.08;
+            const fontSize = Math.min(width, height) * 0.05;
+            const smallFontSize = Math.min(width, height) * 0.035;
+
+            return {
+              width,
+              height,
+              x: { domain: [0, width], axis: null },
+              y: { domain: [0, height], axis: null },
+              marks: [
+                Plot.rect([{}], {
+                  x1: 0,
+                  x2: width,
+                  y1: 0,
+                  y2: height,
+                  fill: "white",
+                  stroke: "#e5e7eb",
+                  strokeWidth: 1,
+                }),
+                Plot.link(bonds, {
+                  x1: "x1",
+                  y1: "y1",
+                  x2: "x2",
+                  y2: "y2",
+                  stroke: "#4A5568",
+                  strokeWidth: (d) => (d.bondOrder > 1 ? 2 : 3),
+                }),
+                Plot.circle(atomsWithPositions, {
+                  x: "x",
+                  y: "y",
+                  r: atomRadius,
+                  fill: (d) => (d.isCentral ? "#EF4444" : "#3B82F6"),
+                  stroke: "#1F2937",
+                  strokeWidth: 2,
+                }),
+                Plot.text(atomsWithPositions, {
+                  x: "x",
+                  y: "y",
+                  text: "name",
+                  fontSize: fontSize,
+                  fontWeight: "bold",
+                  fill: "white",
+                  textAnchor: "middle",
+                  dy: fontSize * 0.3,
+                }),
+                Plot.text(
+                  atomsWithPositions.filter((d) => d.loneElectrons > 0),
+                  {
+                    x: "x",
+                    y: (d) => d.y - atomRadius * 1.8,
+                    text: (d) => `LE: ${d.loneElectrons}`,
+                    fontSize: smallFontSize,
+                    fontWeight: "bold",
+                    fill: "#7C3AED",
+                    textAnchor: "middle",
+                  },
+                ),
+                Plot.text(atomsWithPositions, {
+                  x: "x",
+                  y: (d) => d.y + atomRadius * 1.8,
+                  text: (d) =>
+                    d.calculated_is_octet ? "✓ Octet" : "✗ No Octet",
+                  fontSize: smallFontSize,
+                  fill: (d) => (d.calculated_is_octet ? "#059669" : "#DC2626"),
+                  textAnchor: "middle",
+                }),
+              ],
+            };
+          },
+        }}
         className="flex-1 border border-gray-200 rounded"
       />
 
@@ -270,17 +347,19 @@ const moleculeTableRenderer = (data: MoleculeData) => {
         <tbody>
           {data.atoms.map((atom) => {
             // Calculate total bond order (sum of all bond orders for this atom)
-            const totalBonds = Object.values(atom.bonds_to_neighbors).reduce(
+            const totalBonds = Object.values(atom.bondsToNeighbors).reduce(
               (a, b) => a + b,
               0,
             );
-            
+
             // Calculate if atom satisfies octet rule
-            const totalElectronsAroundAtom = totalBonds * 2 + atom.lone_electrons;
-            const satisfiesOctet = atom.name === 'H' || atom.valence === 1 
-              ? totalElectronsAroundAtom >= 2  // Duet rule for hydrogen
-              : totalElectronsAroundAtom >= 8; // Octet rule for others
-            
+            const totalElectronsAroundAtom =
+              totalBonds * 2 + atom.loneElectrons;
+            const satisfiesOctet =
+              atom.name === "H" || atom.valenceElectrons === 1
+                ? totalElectronsAroundAtom >= 2 // Duet rule for hydrogen
+                : totalElectronsAroundAtom >= 8; // Octet rule for others
+
             return (
               <tr key={atom.uuid} className="hover:bg-gray-50">
                 <td className="border border-gray-300 px-3 py-2 font-semibold">
@@ -289,22 +368,22 @@ const moleculeTableRenderer = (data: MoleculeData) => {
                 <td className="border border-gray-300 px-3 py-2">
                   <span
                     className={`px-2 py-1 rounded text-xs ${
-                      atom.is_central
+                      atom.isCentral
                         ? "bg-red-100 text-red-800"
                         : "bg-blue-100 text-blue-800"
                     }`}
                   >
-                    {atom.is_central ? "Central" : "Terminal"}
+                    {atom.isCentral ? "Central" : "Terminal"}
                   </span>
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
-                  {atom.valence}
+                  {atom.valenceElectrons}
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
                   {totalBonds}
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
-                  {atom.lone_electrons}
+                  {atom.loneElectrons}
                 </td>
                 <td className="border border-gray-300 px-3 py-2">
                   <span
@@ -334,7 +413,7 @@ VisualizerRegistry.register({
   component: lewisStructurePlotRenderer,
   category: "chemistry",
   dataValidator: (data): data is MoleculeData =>
-    data && data.atoms && data.central_atom && Array.isArray(data.atoms),
+    data && data.atoms && data.centralAtom && Array.isArray(data.atoms),
 });
 
 VisualizerRegistry.register({

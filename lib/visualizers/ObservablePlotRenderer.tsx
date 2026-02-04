@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import * as Plot from "@observablehq/plot";
 
 interface PlotSpec {
@@ -11,6 +11,7 @@ interface PlotSpec {
   x?: any;
   y?: any;
   color?: any;
+  createSpec?: (width: number, height: number) => any;
   [key: string]: any;
 }
 
@@ -26,16 +27,54 @@ export const ObservablePlotRenderer = ({
   className = "",
 }: ObservablePlotProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
+
+  const updateDimensions = useCallback(() => {
+    if (containerRef.current) {
+      const { clientWidth, clientHeight } = containerRef.current;
+      setDimensions({
+        width: Math.max(clientWidth - 20, 200), // Leave some padding
+        height: Math.max(clientHeight - 20, 150),
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+
+    // Use ResizeObserver if available for better container size tracking
+    let resizeObserver: ResizeObserver | null = null;
+    if (window.ResizeObserver && containerRef.current) {
+      resizeObserver = new ResizeObserver(updateDimensions);
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [updateDimensions]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     try {
-      const plotOptions = {
-        ...spec,
-        width: spec.width || 400,
-        height: spec.height || 300,
-      } as any; // Type assertion to handle Plot.js type complexities
+      let plotOptions: any;
+
+      if (spec.createSpec && typeof spec.createSpec === "function") {
+        // Use the createSpec function to generate a responsive spec
+        plotOptions = spec.createSpec(dimensions.width, dimensions.height);
+      } else {
+        // Use the static spec with responsive dimensions
+        plotOptions = {
+          ...spec,
+          width: dimensions.width,
+          height: dimensions.height,
+        };
+      }
 
       const plot = Plot.plot(plotOptions);
       containerRef.current.replaceChildren(plot);
@@ -55,7 +94,7 @@ export const ObservablePlotRenderer = ({
         </div>`;
       }
     }
-  }, [data, spec]);
+  }, [data, spec, dimensions]);
 
   return <div ref={containerRef} className={className} />;
 };
