@@ -1,3 +1,5 @@
+"use client";
+
 // Import all visualizer modules to trigger registration
 import "./chemistry/lewis-structures";
 import "./general/charts";
