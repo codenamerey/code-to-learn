@@ -6,44 +6,44 @@ class Atom {
     this.name = name;
     this.valenceElectrons = valenceElectrons;
     this.electronegativity = electronegativity;
-    this.lone_electrons = 0;
-    this.bonds_to_neighbors = {}; 
-    this.is_central = false;
+    this.loneElectrons = 0;
+    this.bondsToNeighbors = {}; 
+    this.isCentral = false;
   }
 
-  get total_electron_count() {
+  get totalElectronCount() {
     let bonding = 0;
-    for (let id in this.bonds_to_neighbors) {
-      bonding += (this.bonds_to_neighbors[id] * 2);
+    for (let id in this.bondsToNeighbors) {
+      bonding += (this.bondsToNeighbors[id] * 2);
     }
-    return bonding + this.lone_electrons;
+    return bonding + this.loneElectrons;
   }
 
-  get is_octet() {
+  get isOctet() {
     let target = (this.name === 'H' || this.name === 'He') ? 2 : 8;
-    return this.total_electron_count === target;
+    return this.totalElectronCount === target;
   }
 
   // Returns the current order of a bond with another atom
-  get_bond_order(other_atom) {
-    for (let id in this.bonds_to_neighbors) {
-      if (other_atom.bonds_to_neighbors[id] !== undefined) {
-        return this.bonds_to_neighbors[id];
+  getBondOrder(otherAtom) {
+    for (let id in this.bondsToNeighbors) {
+      if (otherAtom.bondsToNeighbors[id] !== undefined) {
+        return this.bondsToNeighbors[id];
       }
     }
     return 0;
   }
 
-  bond(other_atom, order = 1) {
+  bond(otherAtom, order = 1) {
     let sharedID = null;
-    for (let id in this.bonds_to_neighbors) {
-      if (other_atom.bonds_to_neighbors[id] !== undefined) sharedID = id;
+    for (let id in this.bondsToNeighbors) {
+      if (otherAtom.bondsToNeighbors[id] !== undefined) sharedID = id;
     }
     
     if (!sharedID) sharedID = "bond_" + (bondCounter++);
     
-    this.bonds_to_neighbors[sharedID] = order;
-    other_atom.bonds_to_neighbors[sharedID] = order;
+    this.bondsToNeighbors[sharedID] = order;
+    otherAtom.bondsToNeighbors[sharedID] = order;
   }
 }
       `;
