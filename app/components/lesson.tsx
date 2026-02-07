@@ -23,6 +23,11 @@ export function Lesson({
   documentationData = atomDocumentationData,
   hints = hintsData,
 }: LessonProps = {}) {
+  // Normalize documentationData to always be an array
+  const documentationClasses = Array.isArray(documentationData)
+    ? documentationData
+    : [documentationData];
+
   const items = [
     {
       title: "Lesson",
@@ -38,36 +43,36 @@ export function Lesson({
       title: "Documentation",
       content: (
         <>
-          <h1>{documentationData.className}</h1>
-          <article>
-            <p>{documentationData.description}</p>
-          </article>
-          <UnderscoreTabs
-            items={[
-              {
-                value: "methods",
-                label: "Methods",
-                content: (
-                  <DocumentationTable methods={documentationData.methods} />
-                ),
-              },
-              {
-                value: "properties",
-                label: "Properties",
-                content: (
-                  <DocumentationTable
-                    properties={documentationData.properties}
-                  />
-                ),
-              },
-            ]}
-          />
-          <h2>Usage:</h2>
-          <ReactMarkdown>
-            {`\`\`\`javascript
-            ${documentationData.usage}
+          {documentationClasses.map((docData, index) => (
+            <div key={index} className={index > 0 ? "mt-8 pt-8 border-t" : ""}>
+              <h1>{docData.className}</h1>
+              <article>
+                <p>{docData.description}</p>
+              </article>
+              <UnderscoreTabs
+                items={[
+                  {
+                    value: `methods-${index}`,
+                    label: "Methods",
+                    content: <DocumentationTable methods={docData.methods} />,
+                  },
+                  {
+                    value: `properties-${index}`,
+                    label: "Properties",
+                    content: (
+                      <DocumentationTable properties={docData.properties} />
+                    ),
+                  },
+                ]}
+              />
+              <h2>Usage:</h2>
+              <ReactMarkdown>
+                {`\`\`\`javascript
+            ${docData.usage}
             \`\`\``}
-          </ReactMarkdown>
+              </ReactMarkdown>
+            </div>
+          ))}
         </>
       ),
       value: "documentation",

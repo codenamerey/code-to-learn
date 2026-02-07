@@ -28,7 +28,7 @@ interface LessonData {
       dataType: string;
       description: string;
     }[];
-  };
+  }[];
   hints: {
     id: string;
     title: string;
@@ -86,18 +86,21 @@ Generate a complete course with 3 lessons. Each lesson must follow this exact st
    - A return statement with the expected output shape
 
 3. **abstracted** - Hidden library code that provides helper classes/functions the student uses but doesn't see. Include:
-   - A class with a constructor, properties, getters, and methods
-   - The class should model the domain (e.g., for chemistry it was an Atom class, for data structures it might be a Node class)
+   - Classes with constructors, properties, getters, and methods
+   - The classes should model the domain (e.g., for chemistry it was Atom and Molecule classes, for data structures it might be Node and LinkedList classes)
    - Use a global counter for IDs if needed
+   - Can include multiple classes
 
-4. **documentationdata** - API reference object for the abstracted code with this exact shape:
-   {
+4. **documentationdata** - Array of API reference objects for each class in the abstracted code. Each object has this shape:
+   [{
      "className": "string",
      "description": "string",
      "usage": "multi-line code example string",
      "methods": [{ "method": "signature", "description": "string", "returnType": "string" }],
      "properties": [{ "type": "Read/Write or Read-Only", "property": "name", "dataType": "type", "description": "string" }]
-   }
+   }]
+   - Include documentation for ALL classes defined in abstracted code
+   - Each class should have its own object in the array
 
 5. **hints** - Array of 3 hint objects: [{ "id": "kebab-case-id", "title": "string", "content": "string with backtick code snippets" }]
 
@@ -135,7 +138,7 @@ Respond with ONLY valid JSON matching this exact schema (no markdown fences, no 
       "lesson": "markdown string",
       "code": "javascript function stub string",
       "abstracted": "javascript class/helper code string",
-      "documentationdata": { "className": "...", "description": "...", "usage": "...", "methods": [...], "properties": [...] },
+      "documentationdata": [{ "className": "...", "description": "...", "usage": "...", "methods": [...], "properties": [...] }],
       "hints": [{ "id": "...", "title": "...", "content": "..." }],
       "unittests": "javascript runTests function string",
       "demodata": "javascript demo data creation string"
