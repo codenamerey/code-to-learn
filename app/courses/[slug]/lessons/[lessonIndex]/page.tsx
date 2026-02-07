@@ -23,6 +23,7 @@ interface LessonData {
   hints: any;
   testRunner: string;
   demoData?: string;
+  functionName?: string;
 }
 
 export default function LessonPage() {
@@ -83,7 +84,7 @@ export default function LessonPage() {
           code,
           abstractedCode: lessonData.abstractedCode,
           language: "javascript",
-          functionName: "calculate_lewis_structure", // TODO: Make this dynamic
+          functionName: lessonData.functionName || "main",
           testRunner: lessonData.testRunner,
           demoData: lessonData.demoData,
         }),

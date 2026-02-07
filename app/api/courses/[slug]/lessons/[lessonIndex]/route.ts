@@ -65,6 +65,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const testRunner = extractExport(unittestsTs, "testRunner");
     const demoData = demodataTs ? extractExport(demodataTs, "demoData") : "";
 
+    // Extract function name from the code
+    const functionNameMatch = defaultCode.match(/function\s+(\w+)\s*\(/);
+    const functionName = functionNameMatch ? functionNameMatch[1] : "main";
+
     let documentationData;
     try {
       const docMatch = docTs.match(
@@ -94,6 +98,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       documentationData,
       hintsData,
       demoData,
+      functionName,
     });
   } catch (error) {
     return NextResponse.json(

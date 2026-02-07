@@ -15,6 +15,7 @@ import DynamicVisualizer from "@/components/DynamicVisualizer";
 // Import visualizers to register them
 import "@/lib/visualizers";
 import { testRunner } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/unittests";
+import { demoData } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/demodata";
 
 export default function Home() {
   const [code, setCode] = useState(`${defaultCode}`);
@@ -37,6 +38,7 @@ export default function Home() {
           language: "javascript",
           functionName: "calculate_lewis_structure",
           testRunner,
+          demoData,
         }),
       });
 
