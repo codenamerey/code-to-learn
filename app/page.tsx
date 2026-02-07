@@ -8,13 +8,13 @@ import {
 import { useState } from "react";
 import { Output } from "./components/output";
 import { CodeEditor } from "./components/codeeditor";
-import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/abstracted";
-import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/code";
+import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/abstracted";
+import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/code";
 import { Lesson } from "./components/lesson";
 import DynamicVisualizer from "@/components/DynamicVisualizer";
 // Import visualizers to register them
 import "@/lib/visualizers";
-import { testRunner } from "@/lib/lessons/chemistry/lewis_structures/unittests";
+import { testRunner } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/unittests";
 
 export default function Home() {
   const [code, setCode] = useState(`${defaultCode}`);

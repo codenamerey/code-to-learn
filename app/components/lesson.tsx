@@ -2,11 +2,11 @@ import { FolderTabs } from "@/components/ui/foldertabs";
 import { UnderscoreTabs } from "@/components/ui/underscoretabs";
 import { DocumentationTable } from "./documentationtable";
 import ReactMarkdown from "react-markdown";
-import { atomDocumentationData } from "@/lib/lessons/chemistry/lewis_structures/documentationdata";
+import { atomDocumentationData } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/documentationdata";
 import { Hints } from "./hints";
-import { hintsData } from "@/lib/lessons/chemistry/lewis_structures/hints";
+import { hintsData } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/hints";
 import rehypeRaw from "rehype-raw";
-import { lesson } from "@/lib/lessons/chemistry/lewis_structures/lesson";
+import { lesson } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/lesson";
 import { VisualizerRegistry } from "@/lib/visualizers/registry";
 
 // Import visualizers to ensure they are registered
