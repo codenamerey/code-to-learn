@@ -33,12 +33,6 @@ const DynamicVisualizer = <TData,>({
     ? VisualizerRegistry.getAllByCategory(category)
     : [];
 
-  // Debug logging
-  console.log("DynamicVisualizer - data:", data);
-  console.log("DynamicVisualizer - category:", category);
-  console.log("DynamicVisualizer - categoryVisualizers:", categoryVisualizers);
-  console.log("DynamicVisualizer - compatibleVisualizers:", compatibleVisualizers);
-
   // Use category visualizers if specified, otherwise use compatible ones
   const availableVisualizers = category
     ? categoryVisualizers
@@ -48,11 +42,6 @@ const DynamicVisualizer = <TData,>({
     ? VisualizerRegistry.get(activeVisualizerId)
     : availableVisualizers[0];
 
-  // Debug logging
-  console.log("DynamicVisualizer - activeVisualizerId:", activeVisualizerId);
-  console.log("DynamicVisualizer - activeVisualizer:", activeVisualizer);
-  console.log("DynamicVisualizer - availableVisualizers:", availableVisualizers);
-
   // Auto-select first compatible visualizer if none specified
   useEffect(() => {
     if (!activeVisualizerId && availableVisualizers.length > 0) {
@@ -61,18 +50,10 @@ const DynamicVisualizer = <TData,>({
   }, [activeVisualizerId, availableVisualizers]);
 
   const renderContent = () => {
-    console.log("renderContent called, renderer:", !!renderer, "activeVisualizer:", !!activeVisualizer);
-    console.log("data in renderContent:", data);
-    console.log("data is array:", Array.isArray(data));
-    console.log("data length:", Array.isArray(data) ? (data as any[]).length : "N/A");
-    
     if (renderer) return renderer(data);
     if (activeVisualizer) {
-      console.log("activeVisualizer.component type:", typeof activeVisualizer.component);
-      console.log("Calling activeVisualizer.component with data:", JSON.stringify(data));
       try {
         const result = activeVisualizer.component(data);
-        console.log("activeVisualizer.component returned:", result);
         return result;
       } catch (e) {
         console.error("Error calling component:", e);
@@ -90,7 +71,7 @@ const DynamicVisualizer = <TData,>({
   };
 
   return (
-    <div className="h-full w-full flex flex-col border-2 border-red-500">
+    <div className="h-full w-full flex flex-col">
       {allowVisualizerSwitch && availableVisualizers.length > 1 && (
         <div className="mb-3 p-2 bg-gray-50 border-b">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -109,7 +90,12 @@ const DynamicVisualizer = <TData,>({
           </select>
         </div>
       )}
-      <div key={JSON.stringify(data)} className="flex-1 min-h-0 border-2 border-blue-500 overflow-auto">{renderContent()}</div>
+      <div
+        key={JSON.stringify(data)}
+        className="flex-1 min-h-0 border-2 overflow-auto"
+      >
+        {renderContent()}
+      </div>
     </div>
   );
 };

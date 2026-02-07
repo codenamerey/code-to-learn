@@ -6,8 +6,11 @@ import { Brain } from "lucide-react";
 export default function LessonSection() {
   const category = useContext(ActiveCategoryContext);
   const renderLessons = (categoryId: number) => {
-    return categories[categoryId].lessons.map((lesson) => (
-      <Card className="w-full border border-black p-4">
+    return categories[categoryId].lessons.map((lesson, index) => (
+      <Card
+        key={lesson.title + index}
+        className="w-full border border-black p-4"
+      >
         <div className="flex gap-1 items-center">
           <CardTitle className="text-xl font-bold">{lesson.title}</CardTitle>{" "}
           <h2 className="text-[#0995BC] text-sm">{lesson.author}</h2>

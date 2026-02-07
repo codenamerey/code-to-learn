@@ -41,9 +41,7 @@ export function Output({
           <div className="flex items-start gap-3">
             <div
               className={`text-2xl ${test.passed ? "text-green-500" : "text-red-500"}`}
-            >
-              {test.passed ? "✓" : "✗"}
-            </div>
+            ></div>
             <div className="flex-1">
               <h3
                 className={`text-lg font-semibold mb-2 ${test.passed ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}`}
