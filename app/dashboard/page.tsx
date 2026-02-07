@@ -1,10 +1,11 @@
 "use client";
 
-import LessonsSection from "@/components/LessonsSection";
+import LessonsSection from "@/components/CoursesSection";
 import NavBar from "@/components/NavBar";
 import CategoriesSection from "@/components/CategoriesSection";
 import { useState } from "react";
 import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
+import CoursesSection from "@/components/CoursesSection";
 
 export default function Dashboard() {
   const [activeCategory, setActiveCategory] = useState(1);
@@ -15,7 +16,7 @@ export default function Dashboard() {
 
   return (
     <ActiveCategoryContext.Provider value={activeCategory}>
-      <section className="flex flex-col items-center bg-[#EAEAEA] ">
+      <section className="h-screen flex flex-col items-center bg-[#EAEAEA] ">
         <NavBar title="Dashboard" />
 
         <section className="w-[47%] border h-auto p-6 bg-white rounded-lg">
@@ -31,7 +32,7 @@ export default function Dashboard() {
               />
             </div>
 
-            <LessonsSection />
+            <CoursesSection />
           </section>
         </section>
       </section>

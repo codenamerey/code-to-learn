@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
-import { categories } from "@/lib/categories/cetegories";
+import { categories } from "@/lib/categories/categories";
 import { Scrollbars } from "react-custom-scrollbars";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Radical } from "lucide-react";
