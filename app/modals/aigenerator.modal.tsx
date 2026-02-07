@@ -22,11 +22,13 @@ import {
 interface AIGeneratorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCourseGenerated?: () => void;
 }
 
 export function AIGeneratorModal({
   open,
   onOpenChange,
+  onCourseGenerated,
 }: AIGeneratorModalProps) {
   const [topic, setTopic] = useState("");
   const [links, setLinks] = useState<string[]>([]);
@@ -34,14 +36,50 @@ export function AIGeneratorModal({
   const [files, setFiles] = useState<File[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
+  const readFileAsText = (file: globalThis.File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
-    // TODO: Implement AI course generation logic with links and files
-    console.log({ topic, links, files: files.map((f) => f.name) });
-    setTimeout(() => {
-      setIsGenerating(false);
+    setError(null);
+
+    try {
+      const fileContents = await Promise.all(
+        files.map((f) => readFileAsText(f)),
+      );
+
+      const response = await fetch("/api/generate-course", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, links, fileContents }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        setError(data.error || "Failed to generate course");
+        return;
+      }
+
+      // Notify parent component to refresh courses
+      if (onCourseGenerated) {
+        onCourseGenerated();
+      }
+
       onOpenChange(false);
-    }, 2000);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleAddLink = () => {
@@ -223,6 +261,12 @@ export function AIGeneratorModal({
             )}
           </div>
         </div>
+
+        {error && (
+          <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <DialogFooter>
           <button

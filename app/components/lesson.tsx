@@ -9,21 +9,27 @@ import rehypeRaw from "rehype-raw";
 import { lesson } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/lesson";
 import { VisualizerRegistry } from "@/lib/visualizers/registry";
 
-// Import visualizers to ensure they are registered
-import "@/lib/visualizers";
-import DynamicVisualizer from "@/components/DynamicVisualizer";
-import { VisualizerBuilder } from "@/components/VisualizerBuilder";
-import { useState } from "react";
-
 // Import visualizers to register them
 import "@/lib/visualizers";
 
-export function Lesson() {
+interface LessonProps {
+  lessonContent?: string;
+  documentationData?: any;
+  hints?: any[];
+}
+
+export function Lesson({
+  lessonContent = lesson,
+  documentationData = atomDocumentationData,
+  hints = hintsData,
+}: LessonProps = {}) {
   const items = [
     {
       title: "Lesson",
       content: (
-        <ReactMarkdown rehypePlugins={[rehypeRaw]}>{lesson}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+          {lessonContent}
+        </ReactMarkdown>
       ),
       value: "lesson",
       label: "Lesson",
@@ -32,9 +38,9 @@ export function Lesson() {
       title: "Documentation",
       content: (
         <>
-          <h1>{atomDocumentationData.className}</h1>
+          <h1>{documentationData.className}</h1>
           <article>
-            <p>{atomDocumentationData.description}</p>
+            <p>{documentationData.description}</p>
           </article>
           <UnderscoreTabs
             items={[
@@ -42,7 +48,7 @@ export function Lesson() {
                 value: "methods",
                 label: "Methods",
                 content: (
-                  <DocumentationTable methods={atomDocumentationData.methods} />
+                  <DocumentationTable methods={documentationData.methods} />
                 ),
               },
               {
@@ -50,7 +56,7 @@ export function Lesson() {
                 label: "Properties",
                 content: (
                   <DocumentationTable
-                    properties={atomDocumentationData.properties}
+                    properties={documentationData.properties}
                   />
                 ),
               },
@@ -59,7 +65,7 @@ export function Lesson() {
           <h2>Usage:</h2>
           <ReactMarkdown>
             {`\`\`\`javascript
-            ${atomDocumentationData.usage}
+            ${documentationData.usage}
             \`\`\``}
           </ReactMarkdown>
         </>
@@ -69,7 +75,7 @@ export function Lesson() {
     },
     {
       title: "Hints",
-      content: <Hints hints={hintsData} />,
+      content: <Hints hints={hints} />,
       value: "hints",
       label: "Hints",
     },

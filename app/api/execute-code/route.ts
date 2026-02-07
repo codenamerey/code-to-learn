@@ -6,6 +6,7 @@ interface ExecutionRequest {
   functionName?: string;
   testRunner?: string;
   language?: string;
+  demoData?: string;
 }
 
 interface ExecutionResult {
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
       functionName,
       testRunner,
       language = "javascript",
+      demoData = "",
     }: ExecutionRequest = await request.json();
     if (!code || typeof code !== "string") {
       return NextResponse.json(
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
         abstractedCode,
         functionName,
         testRunner,
+        demoData,
       );
     } else {
       return NextResponse.json(
@@ -83,6 +86,7 @@ async function executeJavaScript(
   abstractedCode: string = "",
   functionName?: string,
   testRunner?: string,
+  demoData?: string,
 ): Promise<Response> {
   try {
     // Build execution context
@@ -135,17 +139,25 @@ async function executeJavaScript(
       // Try to execute main function if specified
       if (typeof ${functionName || "main"} === 'function') {
         try {
-          // Create H₂O atoms for demonstration in output tab
+          ${
+            demoData
+              ? demoData
+              : `// Default H₂O atoms for demonstration
           const demoAtoms = [
             new Atom(1, 2.1, 'H'),
             new Atom(6, 3.5, 'O'),
             new Atom(1, 2.1, 'H')
-          ];
+          ];`
+          }
 
-          // Add UUIDs to atoms
-          demoAtoms.forEach((atom, index) => {
-            atom.uuid = 'atom-' + index;
-          });
+          // Add UUIDs to atoms if they exist
+          if (typeof demoAtoms !== 'undefined' && Array.isArray(demoAtoms)) {
+            demoAtoms.forEach((atom, index) => {
+              if (atom && typeof atom === 'object') {
+                atom.uuid = 'atom-' + index;
+              }
+            });
+          }
           result = ${functionName || "main"}(demoAtoms);
         } catch (e) {
           console.error('Error executing main function:', e.message);
