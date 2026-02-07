@@ -1,14 +1,20 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
 import { categories } from "@/lib/categories/categories";
 import { Card, CardTitle, CardDescription } from "./ui/card";
 import { Brain, WandSparkles } from "lucide-react";
+import { AIGeneratorModal } from "@/app/modals/aigenerator.modal";
+
 export default function CoursesSection() {
   const category = useContext(ActiveCategoryContext);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const renderCourses = (categoryId: number) => {
     return (
       <>
-        <Card className="w-full border border-black border-dashed p-4  hover:scale-[1.02] hover:bg-gray-100 transition-transform cursor-pointer">
+        <Card
+          onClick={() => setIsModalOpen(true)}
+          className="w-full border border-black border-dashed p-4  hover:scale-[1.02] hover:bg-gray-100 transition-transform cursor-pointer"
+        >
           <div className="flex gap-1 items-center">
             <CardTitle className="flex gap-2 text-xl font-bold">
               <WandSparkles /> Generate Your Own Course
@@ -53,6 +59,7 @@ export default function CoursesSection() {
   return (
     <section className="flex flex-col gap-2">
       {renderCourses(category - 1)}
+      <AIGeneratorModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </section>
   );
 }
