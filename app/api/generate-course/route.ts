@@ -6,6 +6,7 @@ interface GenerateCourseRequest {
   topic: string;
   links: string[];
   fileContents: string[];
+  customPrompt?: string;
 }
 
 interface LessonData {
@@ -51,6 +52,7 @@ function buildPrompt(
   topic: string,
   links: string[],
   fileContents: string[],
+  customPrompt?: string,
 ): string {
   let context = "";
 
@@ -63,6 +65,10 @@ function buildPrompt(
     fileContents.forEach((content, i) => {
       context += `--- Document ${i + 1} ---\n${content}\n`;
     });
+  }
+
+  if (customPrompt) {
+    context += `\nCustom instructions from the user:\n${customPrompt}\n`;
   }
 
   return `You are an expert course creator for an interactive coding education platform. The platform teaches concepts through hands-on coding challenges where students write JavaScript functions that manipulate domain-specific objects.
@@ -217,7 +223,7 @@ async function writeLesson(
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateCourseRequest = await request.json();
-    const { topic, links = [], fileContents = [] } = body;
+    const { topic, links = [], fileContents = [], customPrompt } = body;
 
     if (!topic || typeof topic !== "string" || topic.trim().length === 0) {
       return NextResponse.json(
@@ -234,7 +240,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildPrompt(topic, links, fileContents);
+    const prompt = buildPrompt(topic, links, fileContents, customPrompt);
 
     const openRouterResponse = await fetch(OPENROUTER_API_URL, {
       method: "POST",

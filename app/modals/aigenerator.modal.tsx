@@ -31,6 +31,7 @@ export function AIGeneratorModal({
   onCourseGenerated,
 }: AIGeneratorModalProps) {
   const [topic, setTopic] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [links, setLinks] = useState<string[]>([]);
   const [currentLink, setCurrentLink] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -59,7 +60,7 @@ export function AIGeneratorModal({
       const response = await fetch("/api/generate-course", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, links, fileContents }),
+        body: JSON.stringify({ topic, links, fileContents, customPrompt }),
       });
 
       const data = await response.json();
@@ -73,6 +74,13 @@ export function AIGeneratorModal({
       if (onCourseGenerated) {
         onCourseGenerated();
       }
+
+      // Reset state
+      setTopic("");
+      setCustomPrompt("");
+      setLinks([]);
+      setFiles([]);
+      setError(null);
 
       onOpenChange(false);
     } catch (err) {
@@ -148,6 +156,29 @@ export function AIGeneratorModal({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC]"
+            />
+          </div>
+
+          {/* Custom Prompt */}
+          <div className="space-y-2">
+            <label
+              htmlFor="customPrompt"
+              className="text-sm font-medium flex items-center gap-2"
+            >
+              <Sparkles size={16} />
+              Custom Instructions (Optional)
+            </label>
+            <p className="text-xs text-gray-500">
+              Add specific requirements, teaching style, or focus areas for your
+              course
+            </p>
+            <textarea
+              id="customPrompt"
+              placeholder="e.g., Focus on practical examples, include real-world projects, emphasize best practices..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC] resize-none"
             />
           </div>
 
