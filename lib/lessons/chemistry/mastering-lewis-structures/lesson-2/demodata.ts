@@ -5,5 +5,5 @@ const hydrogen1 = new Atom('H', 1);
 const hydrogen2 = new Atom('H', 1);
 const hydrogen3 = new Atom('H', 1);
 const nh3 = new Molecule([nitrogen, hydrogen1, hydrogen2, hydrogen3], 0);
-const demoAtoms = nh3;
+const demoData = nh3;
 `;

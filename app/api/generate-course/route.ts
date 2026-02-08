@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { fetchTranscript } from "youtube-transcript-plus";
 
 interface GenerateCourseRequest {
   topic: string;
@@ -48,16 +49,75 @@ interface CourseOutput {
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-function buildPrompt(
+function extractVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+function isYouTubeUrl(url: string): boolean {
+  return /youtube\.com|youtu\.be/.test(url);
+}
+
+async function fetchYouTubeTranscript(url: string): Promise<string | null> {
+  try {
+    const videoId = extractVideoId(url);
+    if (!videoId) return null;
+
+    const transcript = await fetchTranscript(videoId);
+    if (!transcript || transcript.length === 0) return null;
+
+    return transcript
+      .map((entry: { offset: number; text: string }) => {
+        const minutes = Math.floor(entry.offset / 60);
+        const seconds = Math.floor(entry.offset % 60);
+        const timeStr = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+        return `[${timeStr}] ${entry.text}`;
+      })
+      .join("\n");
+  } catch {
+    return null;
+  }
+}
+
+async function buildPrompt(
   topic: string,
   links: string[],
   fileContents: string[],
   customPrompt?: string,
-): string {
+): Promise<string> {
   let context = "";
 
-  if (links.length > 0) {
-    context += `\nReference links the user provided:\n${links.map((l, i) => `${i + 1}. ${l}`).join("\n")}\n`;
+  const youtubeLinks = links.filter(isYouTubeUrl);
+  const otherLinks = links.filter((l) => !isYouTubeUrl(l));
+
+  if (youtubeLinks.length > 0) {
+    context += `\nYouTube videos with transcripts:\n`;
+    for (let i = 0; i < youtubeLinks.length; i++) {
+      const videoId = extractVideoId(youtubeLinks[i]);
+      context += `Video ${i + 1}: ${youtubeLinks[i]}\n`;
+      context += `Video ID: ${videoId}\n`;
+      const transcript = await fetchYouTubeTranscript(youtubeLinks[i]);
+      if (transcript) {
+        context += `Transcript:\n${transcript}\n\n`;
+      } else {
+        context += `(Transcript not available)\n\n`;
+      }
+    }
+  }
+
+  if (otherLinks.length > 0) {
+    context += `\nReference links the user provided:\n${otherLinks.map((l, i) => `${i + 1}. ${l}`).join("\n")}\n`;
   }
 
   if (fileContents.length > 0) {
@@ -76,7 +136,7 @@ function buildPrompt(
 The user wants to create a course about: "${topic}"
 ${context}
 
-Generate a complete course with 3 lessons. Each lesson must follow this exact structure:
+Generate a complete course with a number of appropriate lessons depending on the number of topics. Each lesson must follow this exact structure:
 
 1. **lesson** - Markdown content teaching the concept. Include:
    - A title as an H1 heading
@@ -120,17 +180,19 @@ Generate a complete course with 3 lessons. Each lesson must follow this exact st
 
 7. **demodata** - A JavaScript string that creates demonstration data for the Output/Visualizer tab. Should:
    - Instantiate objects from the abstracted code that represent a simple, representative example
-   - Store the demo data in a variable called \`demoAtoms\` (or appropriate name matching the domain)
+   - **CRITICAL: Store the final demo data in a variable called \`demoData\`** (this exact name is required - do not use any other variable name)
    - Be a complete, working example that students can see visualized
-   - Example for chemistry: \`const hydrogen1 = new Atom(1, 2.1, 'H'); const oxygen = new Atom(6, 3.5, 'O'); const hydrogen2 = new Atom(1, 2.1, 'H'); const demoAtoms = [hydrogen1, oxygen, hydrogen2];\`
+   - Example for chemistry: \`const hydrogen1 = new Atom(1, 2.1, 'H'); const oxygen = new Atom(6, 3.5, 'O'); const hydrogen2 = new Atom(1, 2.1, 'H'); const demoData = [hydrogen1, oxygen, hydrogen2];\`
+   - Example for RSA: \`const msg1 = new Message("Hello"); const msg2 = new Message("World"); const demoData = [msg1, msg2];\`
    - The demo should be different for each lesson to show progression
+   - **The variable MUST be named \`demoData\` regardless of the domain**
 
 IMPORTANT RULES:
 - The abstracted code, default code, and unit tests must all be plain JavaScript strings (no TypeScript).
 - The abstracted code must define all classes/functions the student and tests use.
 - The unit tests must create their own test data using the classes from abstracted code.
 - Each lesson should build on the previous one in complexity.
-- The function name in \`code\` must be consistent across all 3 lessons (same function name).
+- The function name in \`code\` must be consistent across all lessons (same function name).
 - Make the course genuinely educational and progressively challenging.
 
 Respond with ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
@@ -240,7 +302,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildPrompt(topic, links, fileContents, customPrompt);
+    const prompt = await buildPrompt(topic, links, fileContents, customPrompt);
 
     const openRouterResponse = await fetch(OPENROUTER_API_URL, {
       method: "POST",

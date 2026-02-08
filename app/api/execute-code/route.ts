@@ -97,25 +97,39 @@ async function executeJavaScript(
       const originalError = console.error;
       const originalWarn = console.warn;
       
+      // Helper function to safely stringify values including BigInt
+      const safeStringify = (arg) => {
+        if (typeof arg === 'bigint') {
+          return arg.toString() + 'n';
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg, (key, value) => {
+              if (typeof value === 'bigint') {
+                return value.toString() + 'n';
+              }
+              return value;
+            }, 2);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      };
+      
       // Override console methods
       console.log = (...args) => {
-        consoleOutput.push(['log', ...args.map(arg => 
-          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-        )]);
+        consoleOutput.push(['log', ...args.map(safeStringify)]);
         originalLog(...args);
       };
       
       console.error = (...args) => {
-        consoleOutput.push(['error', ...args.map(arg => 
-          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-        )]);
+        consoleOutput.push(['error', ...args.map(safeStringify)]);
         originalError(...args);
       };
       
       console.warn = (...args) => {
-        consoleOutput.push(['warn', ...args.map(arg => 
-          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-        )]);
+        consoleOutput.push(['warn', ...args.map(safeStringify)]);
         originalWarn(...args);
       };
       
@@ -143,22 +157,28 @@ async function executeJavaScript(
             demoData
               ? demoData
               : `// Default H₂O atoms for demonstration
-          const demoAtoms = [
+          const demoData = [
             new Atom(1, 2.1, 'H'),
             new Atom(6, 3.5, 'O'),
             new Atom(1, 2.1, 'H')
           ];`
           }
 
-          // Add UUIDs to atoms if they exist
-          if (typeof demoAtoms !== 'undefined' && Array.isArray(demoAtoms)) {
-            demoAtoms.forEach((atom, index) => {
-              if (atom && typeof atom === 'object') {
-                atom.uuid = 'atom-' + index;
-              }
-            });
+          // Add UUIDs to data items if they exist and are in an array
+          if (typeof demoData !== 'undefined') {
+            if (Array.isArray(demoData)) {
+              demoData.forEach((item, index) => {
+                if (item && typeof item === 'object') {
+                  item.uuid = 'item-' + index;
+                }
+              });
+            } else if (demoData && typeof demoData === 'object') {
+              // If it's a single object, add a UUID to it
+              demoData.uuid = 'item-0';
+            }
           }
-          result = ${functionName || "main"}(demoAtoms);
+          
+          result = ${functionName || "main"}(demoData);
         } catch (e) {
           console.error('Error executing main function:', e.message);
           return {
@@ -192,9 +212,15 @@ async function executeJavaScript(
       console.warn = originalWarn;
       
       // Serialize result to plain objects (strips class instances, preserves enumerable properties)
+      // Handle BigInt values by converting them to strings
       let serializedResult = null;
       try {
-        serializedResult = JSON.parse(JSON.stringify(result));
+        serializedResult = JSON.parse(JSON.stringify(result, (key, value) => {
+          if (typeof value === 'bigint') {
+            return value.toString() + 'n'; // Add 'n' suffix to indicate it was a BigInt
+          }
+          return value;
+        }));
       } catch (e) {
         console.error('Error serializing result:', e);
       }
