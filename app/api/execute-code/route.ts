@@ -153,32 +153,8 @@ async function executeJavaScript(
       // Try to execute main function if specified
       if (typeof ${functionName || "main"} === 'function') {
         try {
-          ${
-            demoData
-              ? demoData
-              : `// Default H₂O atoms for demonstration
-          const demoData = [
-            new Atom(1, 2.1, 'H'),
-            new Atom(6, 3.5, 'O'),
-            new Atom(1, 2.1, 'H')
-          ];`
-          }
-
-          // Add UUIDs to data items if they exist and are in an array
-          if (typeof demoData !== 'undefined') {
-            if (Array.isArray(demoData)) {
-              demoData.forEach((item, index) => {
-                if (item && typeof item === 'object') {
-                  item.uuid = 'item-' + index;
-                }
-              });
-            } else if (demoData && typeof demoData === 'object') {
-              // If it's a single object, add a UUID to it
-              demoData.uuid = 'item-0';
-            }
-          }
-          
-          result = ${functionName || "main"}(demoData);
+          ${demoData}
+          result = ${functionName || "main"}(...demoData);
         } catch (e) {
           console.error('Error executing main function:', e.message);
           return {

@@ -195,7 +195,16 @@ IMPORTANT RULES:
 - The function name in \`code\` must be consistent across all lessons (same function name).
 - Make the course genuinely educational and progressively challenging.
 
-Respond with ONLY valid JSON matching this exact schema (no markdown fences, no explanation):
+CRITICAL JSON OUTPUT REQUIREMENTS:
+- Return ONLY the raw JSON object - no markdown, no code fences, no explanatory text before or after
+- Do NOT wrap the response in \`\`\`json or \`\`\` code fences
+- Do NOT include any text before the opening { or after the closing }
+- Ensure all strings are properly escaped (use \\\\ for backslashes, \\" for quotes)
+- Do NOT use trailing commas in arrays or objects
+- All property names must be in double quotes
+- All string values must be in double quotes (not single quotes)
+
+Respond with ONLY valid JSON matching this exact schema:
 {
   "courseTitle": "string",
   "courseSlug": "lowercase-kebab-case",
@@ -210,12 +219,6 @@ Respond with ONLY valid JSON matching this exact schema (no markdown fences, no 
       "hints": [{ "id": "...", "title": "...", "content": "..." }],
       "unittests": "javascript runTests function string",
       "demodata": "javascript demo data creation string"
-    }
-  ]
-}
-      "documentationdata": { "className": "...", "description": "...", "usage": "...", "methods": [...], "properties": [...] },
-      "hints": [{ "id": "...", "title": "...", "content": "..." }],
-      "unittests": "javascript runTests function string"
     }
   ]
 }`;
@@ -316,12 +319,17 @@ export async function POST(request: NextRequest) {
         model: "google/gemini-2.5-flash",
         messages: [
           {
+            role: "system",
+            content:
+              "You are a JSON-generating AI assistant. You MUST respond with ONLY valid, parseable JSON. Never include markdown code fences, explanatory text, or any content outside the JSON object.",
+          },
+          {
             role: "user",
             content: prompt,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 16000,
+        temperature: 0.5,
+        max_tokens: 32000,
       }),
     });
 
@@ -349,17 +357,34 @@ export async function POST(request: NextRequest) {
 
     let courseData: CourseOutput;
     try {
-      const cleaned = rawContent
-        .replace(/^```(?:json)?\s*/m, "")
-        .replace(/```\s*$/m, "")
-        .trim();
+      // More aggressive cleaning of the response
+      let cleaned = rawContent.trim();
+
+      // Remove markdown code fences
+      cleaned = cleaned.replace(/^```(?:json)?\s*/m, "");
+      cleaned = cleaned.replace(/```\s*$/m, "");
+
+      // Remove any leading/trailing text before the first { and after the last }
+      const firstBrace = cleaned.indexOf("{");
+      const lastBrace = cleaned.lastIndexOf("}");
+
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      }
+
+      // Remove any trailing commas before closing brackets/braces (common JSON error)
+      cleaned = cleaned.replace(/,(\s*[}\]])/g, "$1");
+
       courseData = JSON.parse(cleaned);
-    } catch {
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      console.error("Raw content:", rawContent);
       return NextResponse.json(
         {
           success: false,
           error: "Failed to parse AI response as JSON",
-          rawContent,
+          parseError: (parseError as Error).message,
+          rawContent: rawContent.substring(0, 1000), // Truncate for response
         },
         { status: 502 },
       );

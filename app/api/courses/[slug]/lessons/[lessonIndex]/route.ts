@@ -69,12 +69,26 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const functionNameMatch = defaultCode.match(/function\s+(\w+)\s*\(/);
     const functionName = functionNameMatch ? functionNameMatch[1] : "main";
 
+    const evalJsObject = (raw: string): any => {
+      // Use indirect eval via Function to parse JS object literals
+      // (handles unquoted keys, trailing commas, etc.)
+      return new Function("return (" + raw + ")")();
+    };
+
     let documentationData;
     try {
       const docMatch = docTs.match(
-        /export\s+const\s+documentationData\s*=\s*([\s\S]*?);[\s]*$/m,
+        /export\s+const\s+documentationData\s*=\s*([\s\S]*?);\s*$/m,
       );
-      documentationData = docMatch ? JSON.parse(docMatch[1]) : {};
+      if (docMatch) {
+        try {
+          documentationData = JSON.parse(docMatch[1]);
+        } catch {
+          documentationData = evalJsObject(docMatch[1]);
+        }
+      } else {
+        documentationData = {};
+      }
     } catch {
       documentationData = {};
     }
@@ -82,9 +96,17 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     let hintsData;
     try {
       const hintsMatch = hintsTs.match(
-        /export\s+const\s+hintsData\s*=\s*([\s\S]*?);[\s]*$/m,
+        /export\s+const\s+hintsData\s*=\s*([\s\S]*?);\s*$/m,
       );
-      hintsData = hintsMatch ? JSON.parse(hintsMatch[1]) : [];
+      if (hintsMatch) {
+        try {
+          hintsData = JSON.parse(hintsMatch[1]);
+        } catch {
+          hintsData = evalJsObject(hintsMatch[1]);
+        }
+      } else {
+        hintsData = [];
+      }
     } catch {
       hintsData = [];
     }
@@ -96,7 +118,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       abstractedCode,
       testRunner,
       documentationData,
-      hintsData,
+      hints: hintsData,
       demoData,
       functionName,
     });
