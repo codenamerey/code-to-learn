@@ -178,13 +178,11 @@ Generate a complete course with a number of appropriate lessons depending on the
    - Validates correctness of the student's output
    - **CRITICAL**: Use string concatenation (+ operator) for error messages, NOT template literals. Example: 'Expected ' + expected + ', got ' + actual instead of \`Expected \${expected}, got \${actual}\`
 
-7. **demodata** - A JavaScript string that creates demonstration data for the Output/Visualizer tab. Should:
-   - Instantiate objects from the abstracted code that represent a simple, representative example
+7. **demodata** - A JavaScript string that creates demonstration data for the Output tab. This will be fed to the student function. Should:
+   - Resemble the first test case in the unit tests.
    - **CRITICAL: Store the final demo data in a variable called \`demoData\`** (this exact name is required - do not use any other variable name)
-   - Be a complete, working example that students can see visualized
-   - Example for chemistry: \`const hydrogen1 = new Atom(1, 2.1, 'H'); const oxygen = new Atom(6, 3.5, 'O'); const hydrogen2 = new Atom(1, 2.1, 'H'); const demoData = [hydrogen1, oxygen, hydrogen2];\`
+   - Stored in an array in the case of multiple parameters. 
    - Example for RSA: \`const msg1 = new Message("Hello"); const msg2 = new Message("World"); const demoData = [msg1, msg2];\`
-   - The demo should be different for each lesson to show progression
    - **The variable MUST be named \`demoData\` regardless of the domain**
 
 IMPORTANT RULES:
