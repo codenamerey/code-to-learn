@@ -169,8 +169,8 @@ Generate a complete course with a number of appropriate lessons depending on the
    - Include documentation for ALL classes defined in abstracted code
    - Each class should have its own object in the array
 
-5. **hints** - Array of 3 hint objects: [{ "id": "kebab-case-id", "title": "string", "content": "string with backtick code snippets" }]
-
+5. **hints** - Array of hint objects: [{ "id": "kebab-case-id", "title": "string", "content": "string with backtick code snippets" }]
+    - These are tips that students can optionally view; fill in with information where the student may get stuck.
 6. **unittests** - A JavaScript string containing a \`runTests(studentFunction)\` function that:
    - Creates test data (instances of the abstracted class)
    - Calls the student function with that data

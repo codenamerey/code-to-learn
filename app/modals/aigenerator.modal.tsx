@@ -64,7 +64,13 @@ export function AIGeneratorModal({
       const response = await fetch("/api/generate-course", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, links, fileContents, customPrompt, includeVisualizer }),
+        body: JSON.stringify({
+          topic,
+          links,
+          fileContents,
+          customPrompt,
+          includeVisualizer,
+        }),
       });
 
       if (!response.ok || !response.body) {
@@ -88,10 +94,10 @@ export function AIGeneratorModal({
           if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.message) {
                 setGenerationStatus(data.message);
-                
+
                 // Check for errors
                 if (data.message.startsWith("Error:")) {
                   setError(data.message);
@@ -99,11 +105,11 @@ export function AIGeneratorModal({
                   return;
                 }
               }
-              
+
               if (data.success) {
                 // Course generation complete
                 setGenerationStatus("Course generated successfully!");
-                
+
                 // Notify parent component to refresh courses
                 if (onCourseGenerated) {
                   onCourseGenerated();
@@ -119,7 +125,7 @@ export function AIGeneratorModal({
                   setGenerationStatus("");
                   onOpenChange(false);
                 }, 1500);
-                
+
                 setIsGenerating(false);
                 return;
               }
@@ -345,7 +351,8 @@ export function AIGeneratorModal({
               Include Visualizer
             </label>
             <p className="text-xs text-gray-500">
-              Add an interactive visualizer panel to the lessons for enhanced learning
+              Add an interactive visualizer panel to the lessons for enhanced
+              learning
             </p>
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -355,7 +362,9 @@ export function AIGeneratorModal({
                   onChange={(e) => setIncludeVisualizer(e.target.checked)}
                   className="w-4 h-4 text-[#0995BC] rounded border-gray-300 focus:ring-[#0995BC]"
                 />
-                <span className="text-sm">Enable visualizer for this course</span>
+                <span className="text-sm">
+                  Enable visualizer for this course
+                </span>
               </label>
             </div>
           </div>
