@@ -36,6 +36,7 @@ export function AIGeneratorModal({
   const [currentLink, setCurrentLink] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<string>("");
 
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +52,7 @@ export function AIGeneratorModal({
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
+    setGenerationStatus("Preparing...");
 
     try {
       const fileContents = await Promise.all(
@@ -63,30 +65,72 @@ export function AIGeneratorModal({
         body: JSON.stringify({ topic, links, fileContents, customPrompt }),
       });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.error || "Failed to generate course");
+      if (!response.ok || !response.body) {
+        setError("Failed to start course generation");
+        setIsGenerating(false);
         return;
       }
 
-      // Notify parent component to refresh courses
-      if (onCourseGenerated) {
-        onCourseGenerated();
+      // Read the SSE stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.message) {
+                setGenerationStatus(data.message);
+                
+                // Check for errors
+                if (data.message.startsWith("Error:")) {
+                  setError(data.message);
+                  setIsGenerating(false);
+                  return;
+                }
+              }
+              
+              if (data.success) {
+                // Course generation complete
+                setGenerationStatus("Course generated successfully!");
+                
+                // Notify parent component to refresh courses
+                if (onCourseGenerated) {
+                  onCourseGenerated();
+                }
+
+                // Reset state after a short delay
+                setTimeout(() => {
+                  setTopic("");
+                  setCustomPrompt("");
+                  setLinks([]);
+                  setFiles([]);
+                  setError(null);
+                  setGenerationStatus("");
+                  onOpenChange(false);
+                }, 1500);
+                
+                setIsGenerating(false);
+                return;
+              }
+            } catch (e) {
+              // Ignore JSON parse errors for partial chunks
+            }
+          }
+        }
       }
-
-      // Reset state
-      setTopic("");
-      setCustomPrompt("");
-      setLinks([]);
-      setFiles([]);
-      setError(null);
-
-      onOpenChange(false);
     } catch (err) {
       setError((err as Error).message);
-    } finally {
       setIsGenerating(false);
+      setGenerationStatus("");
     }
   };
 
@@ -296,6 +340,13 @@ export function AIGeneratorModal({
         {error && (
           <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {isGenerating && generationStatus && (
+          <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700 flex items-center gap-2">
+            <Sparkles className="animate-spin" size={16} />
+            {generationStatus}
           </div>
         )}
 

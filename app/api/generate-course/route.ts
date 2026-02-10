@@ -284,170 +284,197 @@ async function writeLesson(
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const body: GenerateCourseRequest = await request.json();
-    const { topic, links = [], fileContents = [], customPrompt } = body;
+  const encoder = new TextEncoder();
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
 
-    if (!topic || typeof topic !== "string" || topic.trim().length === 0) {
-      return NextResponse.json(
-        { success: false, error: "A course topic is required" },
-        { status: 400 },
-      );
-    }
+  const sendUpdate = async (message: string) => {
+    await writer.write(
+      encoder.encode(`data: ${JSON.stringify({ message })}\n\n`),
+    );
+  };
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, error: "OPENROUTER_API_KEY is not configured" },
-        { status: 500 },
-      );
-    }
-
-    const prompt = await buildPrompt(topic, links, fileContents, customPrompt);
-
-    const openRouterResponse = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://code-to-learn.dev",
-        "X-Title": "Code to Learn",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a JSON-generating AI assistant. You MUST respond with ONLY valid, parseable JSON. Never include markdown code fences, explanatory text, or any content outside the JSON object.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 32000,
-      }),
-    });
-
-    if (!openRouterResponse.ok) {
-      const errText = await openRouterResponse.text();
-      return NextResponse.json(
-        {
-          success: false,
-          error: `OpenRouter API error: ${openRouterResponse.status}`,
-          details: errText,
-        },
-        { status: 502 },
-      );
-    }
-
-    const aiResult = await openRouterResponse.json();
-    const rawContent = aiResult.choices?.[0]?.message?.content;
-
-    if (!rawContent) {
-      return NextResponse.json(
-        { success: false, error: "No content returned from AI" },
-        { status: 502 },
-      );
-    }
-
-    let courseData: CourseOutput;
+  // Start processing in the background
+  (async () => {
     try {
-      // More aggressive cleaning of the response
-      let cleaned = rawContent.trim();
+      const body: GenerateCourseRequest = await request.json();
+      const { topic, links = [], fileContents = [], customPrompt } = body;
 
-      // Remove markdown code fences
-      cleaned = cleaned.replace(/^```(?:json)?\s*/m, "");
-      cleaned = cleaned.replace(/```\s*$/m, "");
-
-      // Remove any leading/trailing text before the first { and after the last }
-      const firstBrace = cleaned.indexOf("{");
-      const lastBrace = cleaned.lastIndexOf("}");
-
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      if (!topic || typeof topic !== "string" || topic.trim().length === 0) {
+        await sendUpdate("Error: A course topic is required");
+        await writer.close();
+        return;
       }
 
-      // Remove any trailing commas before closing brackets/braces (common JSON error)
-      cleaned = cleaned.replace(/,(\s*[}\]])/g, "$1");
+      const apiKey = process.env.OPENROUTER_API_KEY;
+      if (!apiKey) {
+        await sendUpdate("Error: API key not configured");
+        await writer.close();
+        return;
+      }
 
-      courseData = JSON.parse(cleaned);
-    } catch (parseError) {
-      console.error("JSON Parse Error:", parseError);
-      console.error("Raw content:", rawContent);
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to parse AI response as JSON",
-          parseError: (parseError as Error).message,
-          rawContent: rawContent.substring(0, 1000), // Truncate for response
-        },
-        { status: 502 },
+      await sendUpdate("Preparing course generation...");
+
+      // Extract YouTube transcripts if any
+      const youtubeLinks = links.filter(isYouTubeUrl);
+      if (youtubeLinks.length > 0) {
+        await sendUpdate(
+          `Extracting transcripts from ${youtubeLinks.length} YouTube video(s)...`,
+        );
+      }
+
+      const prompt = await buildPrompt(
+        topic,
+        links,
+        fileContents,
+        customPrompt,
       );
-    }
 
-    if (
-      !courseData.courseTitle ||
-      !courseData.courseSlug ||
-      !Array.isArray(courseData.lessons) ||
-      courseData.lessons.length === 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "AI response is missing required fields",
-          courseData,
+      await sendUpdate("Sending request to AI model...");
+
+      const openRouterResponse = await fetch(OPENROUTER_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://code-to-learn.dev",
+          "X-Title": "Code to Learn",
         },
-        { status: 502 },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a JSON-generating AI assistant. You MUST respond with ONLY valid, parseable JSON. Never include markdown code fences, explanatory text, or any content outside the JSON object.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.5,
+          max_tokens: 32000,
+        }),
+      });
+
+      if (!openRouterResponse.ok) {
+        const errText = await openRouterResponse.text();
+        await sendUpdate(`Error: AI API returned ${openRouterResponse.status}`);
+        await writer.close();
+        return;
+      }
+
+      await sendUpdate("Generating course content with AI...");
+
+      const aiResult = await openRouterResponse.json();
+      const rawContent = aiResult.choices?.[0]?.message?.content;
+
+      if (!rawContent) {
+        await sendUpdate("Error: No content returned from AI");
+        await writer.close();
+        return;
+      }
+
+      await sendUpdate("Parsing course structure...");
+
+      let courseData: CourseOutput;
+      try {
+        // More aggressive cleaning of the response
+        let cleaned = rawContent.trim();
+
+        // Remove markdown code fences
+        cleaned = cleaned.replace(/^```(?:json)?\s*/m, "");
+        cleaned = cleaned.replace(/```\s*$/m, "");
+
+        // Remove any leading/trailing text before the first { and after the last }
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+        }
+
+        // Remove any trailing commas before closing brackets/braces (common JSON error)
+        cleaned = cleaned.replace(/,(\s*[}\]])/g, "$1");
+
+        courseData = JSON.parse(cleaned);
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
+        console.error("Raw content:", rawContent);
+        await sendUpdate("Error: Failed to parse AI response");
+        await writer.close();
+        return;
+      }
+
+      if (
+        !courseData.courseTitle ||
+        !courseData.courseSlug ||
+        !Array.isArray(courseData.lessons) ||
+        courseData.lessons.length === 0
+      ) {
+        await sendUpdate("Error: Invalid course structure from AI");
+        await writer.close();
+        return;
+      }
+
+      const slug = sanitizeSlug(courseData.courseSlug);
+
+      await sendUpdate(`Creating course: ${courseData.courseTitle}`);
+
+      for (let i = 0; i < courseData.lessons.length; i++) {
+        await sendUpdate(
+          `Writing lesson ${i + 1} of ${courseData.lessons.length}: ${courseData.lessons[i].lessonTitle}`,
+        );
+        await writeLesson(slug, i, courseData.lessons[i]);
+      }
+
+      await sendUpdate("Saving course metadata...");
+
+      const courseMeta = {
+        id: Date.now(),
+        title: courseData.courseTitle,
+        slug,
+        author: "AI Generated",
+        description: courseData.description,
+        learnCount: 0,
+        lessonCount: courseData.lessons.length,
+        lessons: courseData.lessons.map((l, i) => ({
+          index: i + 1,
+          title: l.lessonTitle,
+        })),
+      };
+
+      const generatedDir = path.join(
+        process.cwd(),
+        "lib",
+        "lessons",
+        "chemistry",
+        slug,
       );
+      await fs.writeFile(
+        path.join(generatedDir, "course.json"),
+        JSON.stringify(courseMeta, null, 2),
+      );
+
+      await sendUpdate("Course generation complete!");
+      await writer.write(
+        encoder.encode(
+          `data: ${JSON.stringify({ success: true, course: courseMeta })}\n\n`,
+        ),
+      );
+      await writer.close();
+    } catch (error) {
+      await sendUpdate(`Error: ${(error as Error).message}`);
+      await writer.close();
     }
+  })();
 
-    const slug = sanitizeSlug(courseData.courseSlug);
-
-    for (let i = 0; i < courseData.lessons.length; i++) {
-      await writeLesson(slug, i, courseData.lessons[i]);
-    }
-
-    const courseMeta = {
-      id: Date.now(),
-      title: courseData.courseTitle,
-      slug,
-      author: "AI Generated",
-      description: courseData.description,
-      learnCount: 0,
-      lessonCount: courseData.lessons.length,
-      lessons: courseData.lessons.map((l, i) => ({
-        index: i + 1,
-        title: l.lessonTitle,
-      })),
-    };
-
-    const generatedDir = path.join(
-      process.cwd(),
-      "lib",
-      "lessons",
-      "chemistry",
-      slug,
-    );
-    await fs.writeFile(
-      path.join(generatedDir, "course.json"),
-      JSON.stringify(courseMeta, null, 2),
-    );
-
-    return NextResponse.json({
-      success: true,
-      course: courseMeta,
-      path: `lib/lessons/chemistry/${slug}`,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: (error as Error).message,
-      },
-      { status: 500 },
-    );
-  }
+  return new Response(stream.readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
