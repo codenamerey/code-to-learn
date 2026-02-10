@@ -24,6 +24,7 @@ interface LessonData {
   testRunner: string;
   demoData?: string;
   functionName?: string;
+  includeVisualizer?: boolean;
 }
 
 export default function LessonPage() {
@@ -169,7 +170,7 @@ export default function LessonPage() {
                 >
                   {/* Code Editor */}
                   <ResizablePanel
-                    defaultSize={33}
+                    defaultSize={lessonData.includeVisualizer ? 50 : 100}
                     minSize={20}
                     className="p-2 relative bg-white rounded-xl"
                   >
@@ -181,24 +182,28 @@ export default function LessonPage() {
                     />
                   </ResizablePanel>
 
-                  <ResizableHandle />
+                  {lessonData.includeVisualizer && (
+                    <>
+                      <ResizableHandle />
 
-                  {/* Visualizer */}
-                  <ResizablePanel
-                    defaultSize={33}
-                    minSize={20}
-                    className="p-2 bg-white rounded-xl"
-                  >
-                    <div className="h-full overflow-y-auto rounded-xl">
-                      <div className="h-full">
-                        <DynamicVisualizer
-                          data={visualizerData}
-                          category="chemistry"
-                          allowVisualizerSwitch={true}
-                        />
-                      </div>
-                    </div>
-                  </ResizablePanel>
+                      {/* Visualizer */}
+                      <ResizablePanel
+                        defaultSize={50}
+                        minSize={20}
+                        className="p-2 bg-white rounded-xl"
+                      >
+                        <div className="h-full overflow-y-auto rounded-xl">
+                          <div className="h-full">
+                            <DynamicVisualizer
+                              data={visualizerData}
+                              category="chemistry"
+                              allowVisualizerSwitch={true}
+                            />
+                          </div>
+                        </div>
+                      </ResizablePanel>
+                    </>
+                  )}
                 </ResizablePanelGroup>
               </ResizablePanel>
 

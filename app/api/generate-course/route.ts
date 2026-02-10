@@ -8,6 +8,7 @@ interface GenerateCourseRequest {
   links: string[];
   fileContents: string[];
   customPrompt?: string;
+  includeVisualizer?: boolean;
 }
 
 interface LessonData {
@@ -439,6 +440,7 @@ export async function POST(request: NextRequest) {
         description: courseData.description,
         learnCount: 0,
         lessonCount: courseData.lessons.length,
+        includeVisualizer: body.includeVisualizer || false,
         lessons: courseData.lessons.map((l, i) => ({
           index: i + 1,
           title: l.lessonTitle,

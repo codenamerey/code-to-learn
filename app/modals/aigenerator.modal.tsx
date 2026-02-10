@@ -17,6 +17,7 @@ import {
   Link as LinkIcon,
   Upload,
   File,
+  Eye,
 } from "lucide-react";
 
 interface AIGeneratorModalProps {
@@ -35,6 +36,7 @@ export function AIGeneratorModal({
   const [links, setLinks] = useState<string[]>([]);
   const [currentLink, setCurrentLink] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [includeVisualizer, setIncludeVisualizer] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<string>("");
 
@@ -62,7 +64,7 @@ export function AIGeneratorModal({
       const response = await fetch("/api/generate-course", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, links, fileContents, customPrompt }),
+        body: JSON.stringify({ topic, links, fileContents, customPrompt, includeVisualizer }),
       });
 
       if (!response.ok || !response.body) {
@@ -334,6 +336,28 @@ export function AIGeneratorModal({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Visualizer Option */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Eye size={16} />
+              Include Visualizer
+            </label>
+            <p className="text-xs text-gray-500">
+              Add an interactive visualizer panel to the lessons for enhanced learning
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeVisualizer}
+                  onChange={(e) => setIncludeVisualizer(e.target.checked)}
+                  className="w-4 h-4 text-[#0995BC] rounded border-gray-300 focus:ring-[#0995BC]"
+                />
+                <span className="text-sm">Enable visualizer for this course</span>
+              </label>
+            </div>
           </div>
         </div>
 

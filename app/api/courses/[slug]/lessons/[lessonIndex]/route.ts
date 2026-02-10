@@ -11,36 +11,23 @@ type RouteContext = {
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { slug, lessonIndex } = await context.params;
-    const lessonDir = path.join(
-      process.cwd(),
-      "lib",
-      "lessons",
-      "chemistry",
-      slug,
-      `lesson-${lessonIndex}`,
-    );
+    const courseDir = path.join(process.cwd(), "lib", "lessons", "chemistry", slug);
+    const lessonDir = path.join(courseDir, `lesson-${lessonIndex}`);
 
-    const readFile = async (filename: string): Promise<string> => {
-      return fs.readFile(path.join(lessonDir, filename), "utf-8");
-    };
+    const [courseJsonRaw, lessonTs, codeTs, abstractedTs, docTs, hintsTs, unittestsTs, demodataTs] =
+      await Promise.all([
+        fs.readFile(path.join(courseDir, "course.json"), "utf-8").catch(() => null),
+        fs.readFile(path.join(lessonDir, "lesson.ts"), "utf-8"),
+        fs.readFile(path.join(lessonDir, "code.ts"), "utf-8"),
+        fs.readFile(path.join(lessonDir, "abstracted.ts"), "utf-8"),
+        fs.readFile(path.join(lessonDir, "documentationdata.ts"), "utf-8"),
+        fs.readFile(path.join(lessonDir, "hints.ts"), "utf-8"),
+        fs.readFile(path.join(lessonDir, "unittests.ts"), "utf-8"),
+        fs.readFile(path.join(lessonDir, "demodata.ts"), "utf-8").catch(() => ""),
+      ]);
 
-    const [
-      lessonTs,
-      codeTs,
-      abstractedTs,
-      docTs,
-      hintsTs,
-      unittestsTs,
-      demodataTs,
-    ] = await Promise.all([
-      readFile("lesson.ts"),
-      readFile("code.ts"),
-      readFile("abstracted.ts"),
-      readFile("documentationdata.ts"),
-      readFile("hints.ts"),
-      readFile("unittests.ts"),
-      readFile("demodata.ts").catch(() => ""), // Optional, fallback to empty string
-    ]);
+    const courseData = courseJsonRaw ? JSON.parse(courseJsonRaw) : {};
+    const includeVisualizer = courseData.includeVisualizer || false;
 
     const extractExport = (content: string, varName: string): string => {
       const backtickMatch = content.match(
@@ -121,6 +108,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       hints: hintsData,
       demoData,
       functionName,
+      includeVisualizer,
     });
   } catch (error) {
     return NextResponse.json(
