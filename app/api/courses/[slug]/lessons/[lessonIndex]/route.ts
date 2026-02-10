@@ -11,20 +11,40 @@ type RouteContext = {
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { slug, lessonIndex } = await context.params;
-    const courseDir = path.join(process.cwd(), "lib", "lessons", "chemistry", slug);
+    const courseDir = path.join(
+      process.cwd(),
+      "lib",
+      "lessons",
+      "chemistry",
+      slug,
+    );
     const lessonDir = path.join(courseDir, `lesson-${lessonIndex}`);
 
-    const [courseJsonRaw, lessonTs, codeTs, abstractedTs, docTs, hintsTs, unittestsTs, demodataTs] =
-      await Promise.all([
-        fs.readFile(path.join(courseDir, "course.json"), "utf-8").catch(() => null),
-        fs.readFile(path.join(lessonDir, "lesson.ts"), "utf-8"),
-        fs.readFile(path.join(lessonDir, "code.ts"), "utf-8"),
-        fs.readFile(path.join(lessonDir, "abstracted.ts"), "utf-8"),
-        fs.readFile(path.join(lessonDir, "documentationdata.ts"), "utf-8"),
-        fs.readFile(path.join(lessonDir, "hints.ts"), "utf-8"),
-        fs.readFile(path.join(lessonDir, "unittests.ts"), "utf-8"),
-        fs.readFile(path.join(lessonDir, "demodata.ts"), "utf-8").catch(() => ""),
-      ]);
+    const [
+      courseJsonRaw,
+      lessonTs,
+      codeTs,
+      abstractedTs,
+      docTs,
+      hintsTs,
+      unittestsTs,
+      demodataTs,
+      visualizerTs,
+    ] = await Promise.all([
+      fs
+        .readFile(path.join(courseDir, "course.json"), "utf-8")
+        .catch(() => null),
+      fs.readFile(path.join(lessonDir, "lesson.ts"), "utf-8"),
+      fs.readFile(path.join(lessonDir, "code.ts"), "utf-8"),
+      fs.readFile(path.join(lessonDir, "abstracted.ts"), "utf-8"),
+      fs.readFile(path.join(lessonDir, "documentationdata.ts"), "utf-8"),
+      fs.readFile(path.join(lessonDir, "hints.ts"), "utf-8"),
+      fs.readFile(path.join(lessonDir, "unittests.ts"), "utf-8"),
+      fs.readFile(path.join(lessonDir, "demodata.ts"), "utf-8").catch(() => ""),
+      fs
+        .readFile(path.join(lessonDir, "visualizer.ts"), "utf-8")
+        .catch(() => ""),
+    ]);
 
     const courseData = courseJsonRaw ? JSON.parse(courseJsonRaw) : {};
     const includeVisualizer = courseData.includeVisualizer || false;
@@ -98,6 +118,24 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       hintsData = [];
     }
 
+    let visualizerConfig;
+    try {
+      if (visualizerTs) {
+        const vizMatch = visualizerTs.match(
+          /export\s+const\s+visualizerConfig\s*=\s*([\s\S]*?);\s*$/m,
+        );
+        if (vizMatch) {
+          try {
+            visualizerConfig = JSON.parse(vizMatch[1]);
+          } catch {
+            visualizerConfig = evalJsObject(vizMatch[1]);
+          }
+        }
+      }
+    } catch {
+      visualizerConfig = undefined;
+    }
+
     return NextResponse.json({
       success: true,
       lesson,
@@ -109,6 +147,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       demoData,
       functionName,
       includeVisualizer,
+      visualizerConfig,
     });
   } catch (error) {
     return NextResponse.json(

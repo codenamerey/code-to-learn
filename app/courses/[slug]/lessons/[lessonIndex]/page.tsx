@@ -11,6 +11,10 @@ import { CodeEditor } from "@/app/components/codeeditor";
 import { Lesson } from "@/app/components/lesson";
 import DynamicVisualizer from "@/components/DynamicVisualizer";
 import { useParams } from "next/navigation";
+import {
+  TemplateRenderer,
+  VisualizerConfig,
+} from "@/lib/visualizers/templates";
 
 // Import visualizers to register them
 import "@/lib/visualizers";
@@ -25,6 +29,7 @@ interface LessonData {
   demoData?: string;
   functionName?: string;
   includeVisualizer?: boolean;
+  visualizerConfig?: VisualizerConfig;
 }
 
 export default function LessonPage() {
@@ -194,11 +199,18 @@ export default function LessonPage() {
                       >
                         <div className="h-full overflow-y-auto rounded-xl">
                           <div className="h-full">
-                            <DynamicVisualizer
-                              data={visualizerData}
-                              category="chemistry"
-                              allowVisualizerSwitch={true}
-                            />
+                            {lessonData.visualizerConfig ? (
+                              <TemplateRenderer
+                                data={visualizerData}
+                                config={lessonData.visualizerConfig}
+                              />
+                            ) : (
+                              <DynamicVisualizer
+                                data={visualizerData}
+                                category="chemistry"
+                                allowVisualizerSwitch={true}
+                              />
+                            )}
                           </div>
                         </div>
                       </ResizablePanel>

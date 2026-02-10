@@ -39,6 +39,12 @@ interface LessonData {
   }[];
   unittests: string;
   demodata: string;
+  visualizer?: {
+    template: string;
+    dataMapping?: Record<string, any>;
+    style?: Record<string, any>;
+    layout?: Record<string, any>;
+  };
 }
 
 interface CourseOutput {
@@ -96,6 +102,7 @@ async function buildPrompt(
   links: string[],
   fileContents: string[],
   customPrompt?: string,
+  includeVisualizer?: boolean,
 ): Promise<string> {
   let context = "";
 
@@ -181,10 +188,52 @@ Generate a complete course with a number of appropriate lessons depending on the
 
 7. **demodata** - A JavaScript string that creates demonstration data for the Output tab. This will be fed to the student function. Should:
    - Resemble the first test case in the unit tests.
+   - Should always be an array.
+      - The array should fit into the function signature of the student function. For example, if the student function takes two parameters, the demoData array should have two elements corresponding to those parameters.
    - **CRITICAL: Store the final demo data in a variable called \`demoData\`** (this exact name is required - do not use any other variable name)
    - Stored in an array in the case of multiple parameters. 
    - Example for RSA: \`const msg1 = new Message("Hello"); const msg2 = new Message("World"); const demoData = [msg1, msg2];\`
    - **The variable MUST be named \`demoData\` regardless of the domain**
+
+${
+  includeVisualizer
+    ? `8. **visualizer** (OPTIONAL) - Configuration object for data visualization. Only include if the student's output is structured data that would benefit from visualization. Structure:
+   {
+     "template": "graph" | "array" | "chart" | "grid" | "table",
+     "dataMapping": {
+       // For graph: "nodes", "edges", "nodeId", "nodeLabel", "edgeSource", "edgeTarget"
+       // For array: "elements", "value", "state"
+       // For chart: "series", "xAxis", "yAxis"
+       // For grid: "grid", "rows", "cols"
+       // Specify paths to data properties in the student's return value
+     },
+     "style": {
+       "colorScheme": "chemistry" | "biology" | "physics" | "math" | "cs" | "default",
+       "showLabels": true/false,
+       "showValues": true/false,
+       "nodeShape": "circle" | "square",
+       "edgeStyle": "line" | "arrow" | "dashed"
+     },
+     "layout": {
+       "type": "force-directed" | "circular" | "hierarchical" | "grid",
+       "spacing": number
+     }
+   }
+   
+   TEMPLATE GUIDELINES:
+   - **graph**: Use for molecular structures, networks, graph algorithms, trees, state machines
+     - Example: Chemistry molecules (nodes=atoms, edges=bonds), computer science graphs
+   - **array**: Use for sorting algorithms, array manipulations, sequences
+     - Example: Merge sort visualization, array transformations
+   - **chart**: Use for mathematical functions, time series, physics data
+     - Example: Projectile motion, function graphs, reaction rates
+   - **grid**: Use for 2D arrays, matrices, cellular automata, pathfinding
+     - Example: A* algorithm, game of life, heat maps
+   - **table**: Use for structured data, comparisons, properties
+     - Example: Element properties, test results, data comparisons
+`
+    : ""
+}
 
 IMPORTANT RULES:
 - The abstracted code, default code, and unit tests must all be plain JavaScript strings (no TypeScript).
@@ -217,7 +266,12 @@ Respond with ONLY valid JSON matching this exact schema:
       "documentationdata": [{ "className": "...", "description": "...", "usage": "...", "methods": [...], "properties": [...] }],
       "hints": [{ "id": "...", "title": "...", "content": "..." }],
       "unittests": "javascript runTests function string",
-      "demodata": "javascript demo data creation string"
+      "demodata": "javascript demo data creation string"${
+        includeVisualizer
+          ? `,
+      "visualizer": { "template": "...", "dataMapping": {...}, "style": {...}, "layout": {...} }`
+          : ""
+      }
     }
   ]
 }`;
@@ -282,6 +336,13 @@ async function writeLesson(
   const demoContent = `export const demoData = \`${escapeTemplateString(lessonData.demodata)}\`;
 `;
   await fs.writeFile(path.join(baseDir, "demodata.ts"), demoContent);
+
+  // Save visualizer config if present
+  if (lessonData.visualizer) {
+    const visualizerContent = `export const visualizerConfig = ${JSON.stringify(lessonData.visualizer, null, 2)};
+`;
+    await fs.writeFile(path.join(baseDir, "visualizer.ts"), visualizerContent);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -329,6 +390,7 @@ export async function POST(request: NextRequest) {
         links,
         fileContents,
         customPrompt,
+        body.includeVisualizer,
       );
 
       await sendUpdate("Sending request to AI model...");

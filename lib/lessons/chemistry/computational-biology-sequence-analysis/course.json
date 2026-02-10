@@ -1,0 +1,28 @@
+{
+  "id": 1770699036589,
+  "title": "Computational Biology: Sequence Analysis Fundamentals",
+  "slug": "computational-biology-sequence-analysis",
+  "author": "AI Generated",
+  "description": "Learn the foundational computational techniques for analyzing biological sequences, from DNA sequencing technologies to advanced alignment algorithms and statistical interpretation.",
+  "learnCount": 0,
+  "lessonCount": 4,
+  "includeVisualizer": true,
+  "lessons": [
+    {
+      "index": 1,
+      "title": "DNA Sequencing: Sanger Method"
+    },
+    {
+      "index": 2,
+      "title": "Next-Generation Sequencing (NGS) Overview"
+    },
+    {
+      "index": 3,
+      "title": "Local Alignment: Ungapped Algorithm"
+    },
+    {
+      "index": 4,
+      "title": "Scoring Systems and Karlin-Altschul Statistics"
+    }
+  ]
+}
