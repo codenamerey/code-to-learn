@@ -197,7 +197,7 @@ Generate a complete course with a number of appropriate lessons depending on the
 
 ${
   includeVisualizer
-    ? `8. **visualizer** (OPTIONAL) - Configuration object for data visualization. Only include if the student's output is structured data that would benefit from visualization. Structure:
+    ? `8. **visualizer** (OPTIONAL) - Configuration object for data visualization. This visualizes the RETURN VALUE of the student's function. Works with ANY return type - primitives (string/number/boolean) or structured data (objects/arrays). Structure:
    {
      "template": "graph" | "array" | "chart" | "grid" | "table",
      "dataMapping": {
@@ -206,6 +206,8 @@ ${
        // For chart: "series", "xAxis", "yAxis"
        // For grid: "grid", "rows", "cols"
        // Specify paths to data properties in the student's return value
+       // NOTE: If return value is a primitive (string/number/boolean), leave dataMapping empty
+       //       The system will auto-wrap primitives into visualizable structures
      },
      "style": {
        "colorScheme": "chemistry" | "biology" | "physics" | "math" | "cs" | "default",
@@ -223,14 +225,24 @@ ${
    TEMPLATE GUIDELINES:
    - **graph**: Use for molecular structures, networks, graph algorithms, trees, state machines
      - Example: Chemistry molecules (nodes=atoms, edges=bonds), computer science graphs
-   - **array**: Use for sorting algorithms, array manipulations, sequences
-     - Example: Merge sort visualization, array transformations
+     - Return value should have: { nodes: [...], edges: [...] }
+   - **array**: Use for sorting algorithms, array manipulations, sequences, STRING OUTPUT
+     - Example: Merge sort visualization, array transformations, DNA sequences
+     - Return value can be: string (auto-converted to character array) OR array of elements
    - **chart**: Use for mathematical functions, time series, physics data
      - Example: Projectile motion, function graphs, reaction rates
+     - Return value should have: { series: [...] } or { xAxis: [...], yAxis: [...] }
    - **grid**: Use for 2D arrays, matrices, cellular automata, pathfinding
      - Example: A* algorithm, game of life, heat maps
-   - **table**: Use for structured data, comparisons, properties
-     - Example: Element properties, test results, data comparisons
+     - Return value should be: 2D array OR { grid: [...], rows: n, cols: m }
+   - **table**: Use for structured data, comparisons, properties, NUMBER/BOOLEAN OUTPUT
+     - Example: Element properties, test results, data comparisons, single values
+     - Return value can be: array of objects OR single primitive (auto-converted)
+   
+   PRIMITIVE RETURN VALUES:
+   - Strings → automatically visualized as character array with "array" template
+   - Numbers/Booleans → automatically visualized as property table with "table" template
+   - You can include visualizer config even if function returns a primitive!
 `
     : ""
 }

@@ -2,7 +2,25 @@
 
 ## Overview
 
-This system allows AI-generated courses to include dynamic visualizations without generating custom code. Instead, the AI configures pre-built visualization templates that can handle common data structures across all educational domains (Math, Physics, Chemistry, Biology, Computer Science, etc.).
+This system allows AI-generated courses to include dynamic visualizations without generating custom code. Instead, the AI configures pre-built visualization templates that can handle **any data type** - from simple primitives (strings, numbers, booleans) to complex structures (graphs, arrays, grids).
+
+### Key Features
+
+✅ **Universal Support** - Works with ALL return types (primitives AND structured data)  
+✅ **Automatic Adaptation** - Intelligently wraps primitives into visualizable structures  
+✅ **Template-Based** - No code generation, just configuration  
+✅ **Domain-Specific** - Color schemes for Chemistry, Biology, Physics, Math, CS  
+✅ **Flexible Layouts** - Force-directed, circular, hierarchical, grid layouts
+
+### Primitive Value Support (NEW!)
+
+The system now automatically handles primitive return values:
+
+- **Strings** → Visualized as character array (e.g., "ACGT" → [A][C][G][T])
+- **Numbers** → Visualized as property table (e.g., 42 → Value: 42)
+- **Booleans** → Visualized as property table (e.g., true → Result: true)
+
+See [PRIMITIVE_SUPPORT.md](./PRIMITIVE_SUPPORT.md) for detailed documentation.
 
 ## Available Templates
 

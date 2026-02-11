@@ -6,6 +6,7 @@ import { ArrayTemplate } from "./ArrayTemplate";
 import { ChartTemplate } from "./ChartTemplate";
 import { GridTemplate } from "./GridTemplate";
 import { TableTemplate } from "./TableTemplate";
+import { isPrimitive, wrapPrimitive, detectBestTemplate } from "./utils";
 
 interface TemplateRendererProps {
   data: any;
@@ -13,7 +14,7 @@ interface TemplateRendererProps {
 }
 
 export function TemplateRenderer({ data, config }: TemplateRendererProps) {
-  if (!data) {
+  if (!data && data !== 0 && data !== false) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
@@ -24,21 +25,41 @@ export function TemplateRenderer({ data, config }: TemplateRendererProps) {
     );
   }
 
-  switch (config.template) {
+  // Auto-wrap primitives into visualizable structures
+  let visualizableData = data;
+  let effectiveTemplate = config.template;
+
+  if (isPrimitive(data)) {
+    visualizableData = wrapPrimitive(data, config.template);
+
+    // If no template specified or the specified template won't work with primitives,
+    // auto-detect the best template
+    if (
+      !effectiveTemplate ||
+      (effectiveTemplate !== "array" && effectiveTemplate !== "table")
+    ) {
+      effectiveTemplate = detectBestTemplate(data) as any;
+    }
+  }
+
+  // Use the effective template
+  const template = effectiveTemplate || config.template;
+
+  switch (template) {
     case "graph":
-      return <GraphTemplate data={data} config={config} />;
+      return <GraphTemplate data={visualizableData} config={config} />;
 
     case "array":
-      return <ArrayTemplate data={data} config={config} />;
+      return <ArrayTemplate data={visualizableData} config={config} />;
 
     case "chart":
-      return <ChartTemplate data={data} config={config} />;
+      return <ChartTemplate data={visualizableData} config={config} />;
 
     case "grid":
-      return <GridTemplate data={data} config={config} />;
+      return <GridTemplate data={visualizableData} config={config} />;
 
     case "table":
-      return <TableTemplate data={data} config={config} />;
+      return <TableTemplate data={visualizableData} config={config} />;
 
     case "tree":
     case "spatial":

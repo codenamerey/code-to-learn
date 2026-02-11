@@ -1,5 +1,111 @@
 // Utility functions for extracting data using mapping configuration
 
+/**
+ * Detects if a value is a primitive (string, number, boolean, null, undefined)
+ */
+export function isPrimitive(value: any): boolean {
+  return (
+    value === null ||
+    value === undefined ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
+
+/**
+ * Converts primitive values into visualizable structures
+ */
+export function wrapPrimitive(value: any, template?: string): any {
+  if (!isPrimitive(value)) return value;
+
+  // For strings, convert to character array
+  if (typeof value === "string") {
+    return {
+      elements: value.split("").map((char, index) => ({
+        id: index,
+        value: char,
+        state: "default",
+      })),
+      result: value,
+      type: "string",
+    };
+  }
+
+  // For numbers, create a simple table representation
+  if (typeof value === "number") {
+    return {
+      elements: [
+        {
+          property: "Value",
+          value: value.toString(),
+          type: typeof value,
+        },
+      ],
+      result: value,
+      type: "number",
+    };
+  }
+
+  // For booleans
+  if (typeof value === "boolean") {
+    return {
+      elements: [
+        {
+          property: "Result",
+          value: value.toString(),
+          type: "boolean",
+        },
+      ],
+      result: value,
+      type: "boolean",
+    };
+  }
+
+  // For null/undefined
+  return {
+    elements: [
+      {
+        property: "Result",
+        value: String(value),
+        type: typeof value,
+      },
+    ],
+    result: value,
+    type: typeof value,
+  };
+}
+
+/**
+ * Auto-detects the best template for a given data structure
+ */
+export function detectBestTemplate(data: any): string {
+  // If it's a primitive, use array for strings, table for others
+  if (isPrimitive(data)) {
+    if (typeof data === "string") return "array";
+    return "table";
+  }
+
+  // If it has nodes/edges, it's a graph
+  if (data.nodes && data.edges) return "graph";
+
+  // If it's a tree structure (has children or root)
+  if (data.root || data.children) return "tree";
+
+  // If it's a 2D array or has rows/cols, it's a grid
+  if (Array.isArray(data) && Array.isArray(data[0])) return "grid";
+  if (data.grid || (data.rows && data.cols)) return "grid";
+
+  // If it has series or chart-like data
+  if (data.series || (data.xAxis && data.yAxis)) return "chart";
+
+  // If it's a simple array
+  if (Array.isArray(data)) return "array";
+
+  // Default to table for objects
+  return "table";
+}
+
 export function getNestedValue(obj: any, path: string): any {
   if (!path) return obj;
 
