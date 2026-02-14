@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,12 @@ import {
   File,
   Eye,
 } from "lucide-react";
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 interface AIGeneratorModalProps {
   open: boolean;
@@ -39,8 +45,30 @@ export function AIGeneratorModal({
   const [includeVisualizer, setIncludeVisualizer] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<string>("");
-
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      const data = await response.json();
+      if (data.success) {
+        setCategories(data.categories);
+        if (data.categories.length > 0 && !selectedCategoryId) {
+          setSelectedCategoryId(data.categories[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
 
   const readFileAsText = (file: globalThis.File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -52,6 +80,11 @@ export function AIGeneratorModal({
   };
 
   const handleGenerate = async () => {
+    if (!selectedCategoryId) {
+      setError("Please select a category");
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     setGenerationStatus("Preparing...");
@@ -70,6 +103,7 @@ export function AIGeneratorModal({
           fileContents,
           customPrompt,
           includeVisualizer,
+          categoryId: selectedCategoryId,
         }),
       });
 
@@ -79,7 +113,6 @@ export function AIGeneratorModal({
         return;
       }
 
-      // Read the SSE stream
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
@@ -98,7 +131,6 @@ export function AIGeneratorModal({
               if (data.message) {
                 setGenerationStatus(data.message);
 
-                // Check for errors
                 if (data.message.startsWith("Error:")) {
                   setError(data.message);
                   setIsGenerating(false);
@@ -107,15 +139,12 @@ export function AIGeneratorModal({
               }
 
               if (data.success) {
-                // Course generation complete
                 setGenerationStatus("Course generated successfully!");
 
-                // Notify parent component to refresh courses
                 if (onCourseGenerated) {
                   onCourseGenerated();
                 }
 
-                // Reset state after a short delay
                 setTimeout(() => {
                   setTopic("");
                   setCustomPrompt("");
@@ -164,7 +193,6 @@ export function AIGeneratorModal({
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       setFiles([...files, ...newFiles]);
-      // Reset input value to allow re-uploading the same file
       e.target.value = "";
     }
   };
@@ -209,6 +237,25 @@ export function AIGeneratorModal({
               onChange={(e) => setTopic(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC]"
             />
+          </div>
+
+          {/* Category Selection */}
+          <div className="space-y-2">
+            <label htmlFor="category" className="text-sm font-medium">
+              Category
+            </label>
+            <select
+              id="category"
+              value={selectedCategoryId || ""}
+              onChange={(e) => setSelectedCategoryId(parseInt(e.target.value, 10))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC] bg-white"
+            >
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Custom Prompt */}
@@ -260,7 +307,6 @@ export function AIGeneratorModal({
               <span>Click to upload or drag and drop files</span>
             </label>
 
-            {/* Display uploaded files */}
             {files.length > 0 && (
               <div className="space-y-2 mt-3 max-h-40 overflow-y-auto">
                 {files.map((file, index) => (
@@ -319,7 +365,6 @@ export function AIGeneratorModal({
               </button>
             </div>
 
-            {/* Display added links */}
             {links.length > 0 && (
               <div className="space-y-2 mt-3 max-h-40 overflow-y-auto">
                 {links.map((link, index) => (

@@ -8,6 +8,7 @@ interface GenerateCourseRequest {
   fileContents: string[];
   customPrompt?: string;
   includeVisualizer?: boolean;
+  categoryId?: number;
 }
 
 interface LessonData {
@@ -429,14 +430,16 @@ export async function POST(request: NextRequest) {
 
       await sendUpdate(`Creating course: ${courseData.courseTitle}`);
 
-      const category = await prisma.category.upsert({
-        where: { slug: "chemistry" },
-        update: {},
-        create: {
-          name: "Chemistry",
-          slug: "chemistry",
-        },
-      });
+      let categoryId = body.categoryId;
+      if (!categoryId) {
+        const defaultCategory = await prisma.category.findFirst();
+        if (!defaultCategory) {
+          await sendUpdate("Error: No categories available");
+          await writer.close();
+          return;
+        }
+        categoryId = defaultCategory.id;
+      }
 
       const course = await prisma.course.create({
         data: {
@@ -447,7 +450,7 @@ export async function POST(request: NextRequest) {
           learnCount: 0,
           lessonCount: courseData.lessons.length,
           includeVisualizer: body.includeVisualizer || false,
-          categoryId: category.id,
+          categoryId: categoryId,
         },
       });
 
