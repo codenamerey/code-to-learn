@@ -46,7 +46,9 @@ export function AIGeneratorModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -211,7 +213,7 @@ export function AIGeneratorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[calc(100vw-2rem)] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <WandSparkles className="text-[#0995BC]" />
@@ -223,7 +225,7 @@ export function AIGeneratorModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto max-h-[calc(100vh-200px)]">
           {/* Topic Input */}
           <div className="space-y-2">
             <label htmlFor="topic" className="text-sm font-medium">
@@ -235,7 +237,7 @@ export function AIGeneratorModal({
               placeholder="e.g., Machine Learning, Web Development, Data Structures..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC] min-w-0"
             />
           </div>
 
@@ -247,7 +249,9 @@ export function AIGeneratorModal({
             <select
               id="category"
               value={selectedCategoryId || ""}
-              onChange={(e) => setSelectedCategoryId(parseInt(e.target.value, 10))}
+              onChange={(e) =>
+                setSelectedCategoryId(parseInt(e.target.value, 10))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC] bg-white"
             >
               {categories.map((category) => (
@@ -346,14 +350,14 @@ export function AIGeneratorModal({
               Add links to YouTube videos, articles, or documentation that you
               want the AI to learn from
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <input
                 type="text"
                 placeholder="Enter a link (YouTube, article, etc.)..."
                 value={currentLink}
                 onChange={(e) => setCurrentLink(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC]"
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0995BC]"
               />
               <button
                 onClick={handleAddLink}
@@ -366,19 +370,24 @@ export function AIGeneratorModal({
             </div>
 
             {links.length > 0 && (
-              <div className="space-y-2 mt-3 max-h-40 overflow-y-auto">
+              <div className="space-y-2 mt-3 max-h-40 overflow-auto">
                 {links.map((link, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md group hover:bg-gray-100 transition-colors"
                   >
                     <LinkIcon size={14} className="text-gray-500 shrink-0" />
-                    <span className="text-sm flex-1 truncate" title={link}>
-                      {link}
-                    </span>
+                    <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                      <span
+                        className="text-sm block overflow-hidden text-ellipsis whitespace-nowrap"
+                        title={link}
+                      >
+                        {link}
+                      </span>
+                    </div>
                     <button
                       onClick={() => handleRemoveLink(link)}
-                      className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                       title="Remove link"
                     >
                       <X size={16} />
