@@ -1,133 +1,55 @@
-"use client";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
-import { useState } from "react";
-import { Output } from "./components/output";
-import { CodeEditor } from "./components/codeeditor";
-import { abstractedCode } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/abstracted";
-import { defaultCode } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/code";
-import { Lesson } from "./components/lesson";
-import DynamicVisualizer from "@/components/DynamicVisualizer";
-// Import visualizers to register them
-import "@/lib/visualizers";
-import { testRunner } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/unittests";
-import { demoData } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/demodata";
-
-export default function Home() {
-  const [code, setCode] = useState(`${defaultCode}`);
-  const [output, setOutput] = useState("");
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [moleculeData, setMoleculeData] = useState(null);
-  const [tests, setTests] = useState<any[] | null>(null);
-
-  const executeCode = async () => {
-    setIsExecuting(true);
-    try {
-      const response = await fetch("/api/execute-code", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code,
-          abstractedCode,
-          language: "javascript",
-          functionName: "calculate_lewis_structure",
-          testRunner,
-          demoData,
-        }),
-      });
-
-      const data = await response.json();
-      console.log("API Response:", data);
-      if (data.success) {
-        setOutput(data.output);
-        // Try to extract molecule data from the result
-        if (data.result) {
-          console.log("Setting molecule data:", data.result);
-          setMoleculeData(data.result);
-        }
-        setTests(data.tests);
-      } else {
-        setOutput(data.output || `API Error: ${data.error}`);
-        setMoleculeData(null);
-      }
-    } catch (error) {
-      setOutput(`Network Error: ${(error as Error).message}`);
-      setMoleculeData(null);
-    }
-    setIsExecuting(false);
-  };
+export default async function Home() {
+  const courses = await prisma.course.findMany({
+    include: {
+      category: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return (
-    <div className="flex flex-col h-screen items-center justify-center font-[overpass] bg-gray-200 dark:bg-black">
-      <main className="flex-1 w-full p-4 overflow-auto">
-        <ResizablePanelGroup
-          orientation="horizontal"
-          className="h-full p-2 rounded-4xl"
-        >
-          <ResizablePanel defaultSize={640} minSize={20} className="p-2">
-            <div className="h-full w-full rounded-2xl p-0 markdown-content">
-              <Lesson />
-            </div>
-          </ResizablePanel>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">
+          Code to Learn
+        </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-300 mb-12">
+          Interactive coding courses for learning programming concepts
+        </p>
 
-          <ResizableHandle />
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
+          Available Courses
+        </h2>
 
-          <ResizablePanel minSize={30} className="p-2">
-            <ResizablePanelGroup
-              orientation="vertical"
-              className="h-full *:p-2"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <Link
+              key={course.id}
+              href={`/courses/${course.slug}/lessons/1`}
+              className="block p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700"
             >
-              <ResizablePanel>
-                <ResizablePanelGroup
-                  orientation="horizontal"
-                  className="h-full *:p-2"
-                >
-                  <ResizablePanel
-                    defaultSize={33}
-                    minSize={20}
-                    className="p-2 relative bg-white rounded-xl"
-                  >
-                    <CodeEditor
-                      executeCode={executeCode}
-                      isExecuting={isExecuting}
-                      code={code}
-                      setCode={setCode}
-                    />
-                  </ResizablePanel>
-                  <ResizableHandle />
-                  <ResizablePanel
-                    defaultSize={33}
-                    minSize={20}
-                    className="p-2 bg-white rounded-xl"
-                  >
-                    <div className="h-full overflow-y-auto rounded-xl">
-                      <div className="h-full">
-                        <DynamicVisualizer
-                          data={moleculeData}
-                          category="chemistry"
-                          allowVisualizerSwitch={true}
-                        />
-                      </div>
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              </ResizablePanel>
-
-              <ResizableHandle />
-
-              <ResizablePanel minSize={20} className="p-0">
-                <Output output={output} tests={tests} />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </main>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                  {course.category.name}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {course.lessonCount} lessons
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                {course.title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                {course.description}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

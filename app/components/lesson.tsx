@@ -1,29 +1,34 @@
 import { FolderTabs } from "@/components/ui/foldertabs";
 import { UnderscoreTabs } from "@/components/ui/underscoretabs";
-import { DocumentationTable } from "./documentationtable";
+import { DocumentationTable, PropertyData } from "./documentationtable";
 import ReactMarkdown from "react-markdown";
-import { atomDocumentationData } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/documentationdata";
-import { Hints } from "./hints";
-import { hintsData } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/hints";
 import rehypeRaw from "rehype-raw";
-import { lesson } from "@/lib/lessons/chemistry/lewis_structures/lesson-1/lesson";
-import { VisualizerRegistry } from "@/lib/visualizers/registry";
 
-// Import visualizers to register them
-import "@/lib/visualizers";
+interface Hint {
+  id: string;
+  title: string;
+  content: string;
+}
+
+interface DocClass {
+  className: string;
+  description: string;
+  usage: string;
+  methods: { method: string; description: string; returnType: string }[];
+  properties: PropertyData[];
+}
 
 interface LessonProps {
   lessonContent?: string;
-  documentationData?: any;
-  hints?: any[];
+  documentationData?: DocClass[];
+  hints?: Hint[];
 }
 
 export function Lesson({
-  lessonContent = lesson,
-  documentationData = atomDocumentationData,
-  hints = hintsData,
-}: LessonProps = {}) {
-  // Normalize documentationData to always be an array
+  lessonContent = "",
+  documentationData = [],
+  hints = [],
+}: LessonProps) {
   const documentationClasses = Array.isArray(documentationData)
     ? documentationData
     : [documentationData];
@@ -67,9 +72,7 @@ export function Lesson({
               />
               <h2>Usage:</h2>
               <ReactMarkdown>
-                {`\`\`\`javascript
-            ${docData.usage}
-            \`\`\``}
+                {"```javascript\n" + docData.usage + "\n```"}
               </ReactMarkdown>
             </div>
           ))}
@@ -86,4 +89,29 @@ export function Lesson({
     },
   ];
   return <FolderTabs items={items} />;
+}
+
+function Hints({ hints }: { hints: Hint[] }) {
+  if (!hints || hints.length === 0) {
+    return (
+      <div className="p-4 text-gray-500 text-center">
+        No hints available for this lesson.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {hints.map((hint) => (
+        <details key={hint.id} className="group">
+          <summary className="cursor-pointer p-3 bg-gray-50 dark:bg-gray-800 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
+            {hint.title}
+          </summary>
+          <div className="p-3 mt-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-sm font-mono whitespace-pre-wrap">
+            {hint.content}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
 }

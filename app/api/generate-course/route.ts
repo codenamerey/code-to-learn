@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { prisma } from "@/lib/prisma";
 import { fetchTranscript } from "youtube-transcript-plus";
 
 interface GenerateCourseRequest {
@@ -297,66 +296,6 @@ function sanitizeSlug(slug: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function escapeTemplateString(str: string): string {
-  return str
-    .replace(/\\/g, "\\\\")
-    .replace(/`/g, "\\`")
-    .replace(/\$\{/g, "\\${");
-}
-
-async function writeLesson(
-  courseSlug: string,
-  lessonIndex: number,
-  lessonData: LessonData,
-): Promise<void> {
-  const baseDir = path.join(
-    process.cwd(),
-    "lib",
-    "lessons",
-    "chemistry",
-    courseSlug,
-    `lesson-${lessonIndex + 1}`,
-  );
-
-  await fs.mkdir(baseDir, { recursive: true });
-
-  const lessonContent = `export const lesson = \`${escapeTemplateString(lessonData.lesson)}\`;
-`;
-  await fs.writeFile(path.join(baseDir, "lesson.ts"), lessonContent);
-
-  const codeContent = `export const defaultCode = \`${escapeTemplateString(lessonData.code)}\`;
-`;
-  await fs.writeFile(path.join(baseDir, "code.ts"), codeContent);
-
-  const abstractedContent = `export const abstractedCode = \`${escapeTemplateString(lessonData.abstracted)}\`;
-`;
-  await fs.writeFile(path.join(baseDir, "abstracted.ts"), abstractedContent);
-
-  const docData = lessonData.documentationdata;
-  const docContent = `export const documentationData = ${JSON.stringify(docData, null, 2)};
-`;
-  await fs.writeFile(path.join(baseDir, "documentationdata.ts"), docContent);
-
-  const hintsContent = `export const hintsData = ${JSON.stringify(lessonData.hints, null, 2)};
-`;
-  await fs.writeFile(path.join(baseDir, "hints.ts"), hintsContent);
-
-  const testContent = `export const testRunner = \`${escapeTemplateString(lessonData.unittests)}\`;
-`;
-  await fs.writeFile(path.join(baseDir, "unittests.ts"), testContent);
-
-  const demoContent = `export const demoData = \`${escapeTemplateString(lessonData.demodata)}\`;
-`;
-  await fs.writeFile(path.join(baseDir, "demodata.ts"), demoContent);
-
-  // Save visualizer config if present
-  if (lessonData.visualizer) {
-    const visualizerContent = `export const visualizerConfig = ${JSON.stringify(lessonData.visualizer, null, 2)};
-`;
-    await fs.writeFile(path.join(baseDir, "visualizer.ts"), visualizerContent);
-  }
-}
-
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
   const stream = new TransformStream();
@@ -368,7 +307,6 @@ export async function POST(request: NextRequest) {
     );
   };
 
-  // Start processing in the background
   (async () => {
     try {
       const body: GenerateCourseRequest = await request.json();
@@ -389,7 +327,6 @@ export async function POST(request: NextRequest) {
 
       await sendUpdate("Preparing course generation...");
 
-      // Extract YouTube transcripts if any
       const youtubeLinks = links.filter(isYouTubeUrl);
       if (youtubeLinks.length > 0) {
         await sendUpdate(
@@ -455,14 +392,10 @@ export async function POST(request: NextRequest) {
 
       let courseData: CourseOutput;
       try {
-        // More aggressive cleaning of the response
         let cleaned = rawContent.trim();
-
-        // Remove markdown code fences
         cleaned = cleaned.replace(/^```(?:json)?\s*/m, "");
         cleaned = cleaned.replace(/```\s*$/m, "");
 
-        // Remove any leading/trailing text before the first { and after the last }
         const firstBrace = cleaned.indexOf("{");
         const lastBrace = cleaned.lastIndexOf("}");
 
@@ -470,7 +403,6 @@ export async function POST(request: NextRequest) {
           cleaned = cleaned.substring(firstBrace, lastBrace + 1);
         }
 
-        // Remove any trailing commas before closing brackets/braces (common JSON error)
         cleaned = cleaned.replace(/,(\s*[}\]])/g, "$1");
 
         courseData = JSON.parse(cleaned);
@@ -497,41 +429,71 @@ export async function POST(request: NextRequest) {
 
       await sendUpdate(`Creating course: ${courseData.courseTitle}`);
 
+      const category = await prisma.category.upsert({
+        where: { slug: "chemistry" },
+        update: {},
+        create: {
+          name: "Chemistry",
+          slug: "chemistry",
+        },
+      });
+
+      const course = await prisma.course.create({
+        data: {
+          title: courseData.courseTitle,
+          slug,
+          author: "AI Generated",
+          description: courseData.description,
+          learnCount: 0,
+          lessonCount: courseData.lessons.length,
+          includeVisualizer: body.includeVisualizer || false,
+          categoryId: category.id,
+        },
+      });
+
       for (let i = 0; i < courseData.lessons.length; i++) {
+        const lessonData = courseData.lessons[i];
         await sendUpdate(
-          `Writing lesson ${i + 1} of ${courseData.lessons.length}: ${courseData.lessons[i].lessonTitle}`,
+          `Creating lesson ${i + 1} of ${courseData.lessons.length}: ${lessonData.lessonTitle}`,
         );
-        await writeLesson(slug, i, courseData.lessons[i]);
+
+        const lesson = await prisma.lesson.create({
+          data: {
+            index: i + 1,
+            title: lessonData.lessonTitle,
+            courseId: course.id,
+          },
+        });
+
+        await prisma.lessonContent.create({
+          data: {
+            lessonId: lesson.id,
+            lessonText: lessonData.lesson,
+            defaultCode: lessonData.code,
+            abstractedCode: lessonData.abstracted,
+            testRunner: lessonData.unittests,
+            demoData: lessonData.demodata,
+            documentationData: lessonData.documentationdata,
+            hintsData: lessonData.hints,
+            visualizerConfig: lessonData.visualizer ?? undefined,
+          },
+        });
       }
 
-      await sendUpdate("Saving course metadata...");
-
       const courseMeta = {
-        id: Date.now(),
-        title: courseData.courseTitle,
-        slug,
-        author: "AI Generated",
-        description: courseData.description,
-        learnCount: 0,
-        lessonCount: courseData.lessons.length,
-        includeVisualizer: body.includeVisualizer || false,
+        id: course.id,
+        title: course.title,
+        slug: course.slug,
+        author: course.author,
+        description: course.description,
+        learnCount: course.learnCount,
+        lessonCount: course.lessonCount,
+        includeVisualizer: course.includeVisualizer,
         lessons: courseData.lessons.map((l, i) => ({
           index: i + 1,
           title: l.lessonTitle,
         })),
       };
-
-      const generatedDir = path.join(
-        process.cwd(),
-        "lib",
-        "lessons",
-        "chemistry",
-        slug,
-      );
-      await fs.writeFile(
-        path.join(generatedDir, "course.json"),
-        JSON.stringify(courseMeta, null, 2),
-      );
 
       await sendUpdate("Course generation complete!");
       await writer.write(

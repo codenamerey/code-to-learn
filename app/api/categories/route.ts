@@ -5,16 +5,20 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const courses = await prisma.course.findMany({
+    const categories = await prisma.category.findMany({
       include: {
-        category: true,
+        _count: {
+          select: {
+            courses: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: "desc",
+        name: "asc",
       },
     });
 
-    return NextResponse.json({ success: true, courses });
+    return NextResponse.json({ success: true, categories });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },

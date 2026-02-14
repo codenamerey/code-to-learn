@@ -4,7 +4,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Hint } from "@/lib/lessons/chemistry/lewis_structures/interfaces/hint.interface";
+
+interface Hint {
+  id: string;
+  title: string;
+  content: string;
+}
 
 export function Hints({ hints }: { hints: Hint[] }) {
   return (

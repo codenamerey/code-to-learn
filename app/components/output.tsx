@@ -101,8 +101,8 @@ export function Output({
               <div className="h-full">
                 <div className="h-full w-full bg-white dark:bg-gray-900">
                   <UnderscoreTabs
-                    classname="overflow-y-auto"
-                    items={createTestTabs(tests)}
+                    className="overflow-y-auto"
+                    items={createTestTabs(tests || [])}
                   />
                 </div>
               </div>
