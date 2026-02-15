@@ -76,6 +76,8 @@ function isYouTubeUrl(url: string): boolean {
   return /youtube\.com|youtu\.be/.test(url);
 }
 
+const MAX_TRANSCRIPT_LENGTH = 15000;
+
 async function fetchYouTubeTranscript(url: string): Promise<string | null> {
   try {
     const videoId = extractVideoId(url);
@@ -84,7 +86,7 @@ async function fetchYouTubeTranscript(url: string): Promise<string | null> {
     const transcript = await fetchTranscript(videoId);
     if (!transcript || transcript.length === 0) return null;
 
-    return transcript
+    let fullTranscript = transcript
       .map((entry: { offset: number; text: string }) => {
         const minutes = Math.floor(entry.offset / 60);
         const seconds = Math.floor(entry.offset % 60);
@@ -92,6 +94,13 @@ async function fetchYouTubeTranscript(url: string): Promise<string | null> {
         return `[${timeStr}] ${entry.text}`;
       })
       .join("\n");
+
+    if (fullTranscript.length > MAX_TRANSCRIPT_LENGTH) {
+      fullTranscript = fullTranscript.substring(0, MAX_TRANSCRIPT_LENGTH);
+      fullTranscript += "\n\n[Transcript truncated due to length. This video is longer than 1 hour. The content above covers the first portion of the video.]";
+    }
+
+    return fullTranscript;
   } catch {
     return null;
   }

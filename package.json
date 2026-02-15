@@ -12,6 +12,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.4",
     "@hookform/resolvers": "^5.2.2",
     "@monaco-editor/react": "4.8.0-rc.3",
     "@observablehq/plot": "^0.6.17",

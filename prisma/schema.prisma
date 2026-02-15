@@ -6,6 +6,47 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id            String         @id()
+  email         String?        @unique
+  name          String?
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  courseProgress CourseProgress[]
+  bookmarkedCourses CourseBookmark[]
+
+  @@map("users")
+}
+
+model CourseProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId   Int
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId   Int?
+  lesson     Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  completed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@map("course_progress")
+}
+
+model CourseBookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId   Int
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@map("course_bookmarks")
+}
+
 model Category {
   id        Int      @id @default(autoincrement())
   name      String
@@ -28,6 +69,8 @@ model Course {
   categoryId        Int
   category          Category  @relation(fields: [categoryId], references: [id])
   lessons           Lesson[]
+  progress          CourseProgress[]
+  bookmarks         CourseBookmark[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -41,6 +84,7 @@ model Lesson {
   courseId      Int
   course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessonContent LessonContent?
+  progress      CourseProgress[]
   createdAt     DateTime      @default(now())
 
   @@unique([courseId, index])
