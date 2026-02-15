@@ -11,7 +11,8 @@ interface GenerateCourseRequest {
   categoryId?: number;
 }
 
-interface LessonData {
+interface CodeLessonData {
+  lessonType?: "code";
   lessonTitle: string;
   lesson: string;
   code: string;
@@ -47,6 +48,27 @@ interface LessonData {
   };
 }
 
+interface QuizLessonData {
+  lessonType: "quiz";
+  lessonTitle: string;
+  lesson: string;
+  quizData: {
+    questions: {
+      id: string;
+      question: string;
+      type: "multiple_choice" | "true_false" | "fill_blank" | "matching";
+      options?: string[];
+      correctAnswer: string | string[];
+      explanation?: string;
+    }[];
+    passingScore?: number;
+    timeLimit?: number;
+    showExplanations?: boolean;
+  };
+}
+
+type LessonData = CodeLessonData | QuizLessonData;
+
 interface CourseOutput {
   courseTitle: string;
   courseSlug: string;
@@ -55,6 +77,7 @@ interface CourseOutput {
 }
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MAX_TRANSCRIPT_LENGTH = 15000;
 
 function extractVideoId(url: string): string | null {
   const patterns = [
@@ -76,8 +99,6 @@ function isYouTubeUrl(url: string): boolean {
   return /youtube\.com|youtu\.be/.test(url);
 }
 
-const MAX_TRANSCRIPT_LENGTH = 15000;
-
 async function fetchYouTubeTranscript(url: string): Promise<string | null> {
   try {
     const videoId = extractVideoId(url);
@@ -97,7 +118,8 @@ async function fetchYouTubeTranscript(url: string): Promise<string | null> {
 
     if (fullTranscript.length > MAX_TRANSCRIPT_LENGTH) {
       fullTranscript = fullTranscript.substring(0, MAX_TRANSCRIPT_LENGTH);
-      fullTranscript += "\n\n[Transcript truncated due to length. This video is longer than 1 hour. The content above covers the first portion of the video.]";
+      fullTranscript +=
+        "\n\n[Transcript truncated due to length. This video is longer than 1 hour. The content above covers the first portion of the video.]";
     }
 
     return fullTranscript;
@@ -148,151 +170,76 @@ async function buildPrompt(
     context += `\nCustom instructions from the user:\n${customPrompt}\n`;
   }
 
-  return `You are an expert course creator for an interactive coding education platform. The platform teaches concepts through hands-on coding challenges where students write JavaScript functions that manipulate domain-specific objects.
+  return `You are an expert course creator for an interactive education platform. The platform supports TWO types of lessons:
+
+1. **CODE LESSONS** - Hands-on coding challenges where students write JavaScript functions
+2. **QUIZ LESSONS** - Knowledge assessment with multiple choice, true/false, fill-in-blank, or matching questions
 
 The user wants to create a course about: "${topic}"
 ${context}
 
-Generate a complete course with a number of appropriate lessons depending on the number of topics. Each lesson must follow this exact structure:
+Determine the best lesson type for each topic. Use CODE lessons for practical skills, algorithms, and programming concepts. Use QUIZ lessons for definitions, concepts, terminology, and knowledge recall.
 
-1. **lesson** - Markdown content teaching the concept. Include:
-   - A title as an H1 heading
-   - Learning Objectives as bullet points
-   - Clear explanation of the algorithm/concept with numbered steps
-   - A "Your Challenge" section describing what students must implement
-   - If there is a youtube video included, place an iframe of the video, and specify the timestamps for the relevant sections of the video to watch; timestamps should be included in the search query of the youtube link so that the video starts and ends at the correct time. Place video at the very top.
+Generate a complete course with appropriate lessons. Each lesson must follow its type's structure:
 
-2. **code** - A JavaScript function stub that students will complete. Include:
-   - A function signature with a descriptive name
-   - Commented steps matching the lesson's algorithm
-   - Do not answer the question in the code comments - they should be hints, not solutions
-   - A return statement with the expected output shape
+---
 
-3. **abstracted** - Hidden library code that provides helper classes/functions the student uses but doesn't see. Include:
-   - Classes with constructors, properties, getters, and methods
-   - The classes should model the domain (e.g., for chemistry it was Atom and Molecule classes, for data structures it might be Node and LinkedList classes)
-   - Use a global counter for IDs if needed
-   - Can include multiple classes
+## CODE LESSON STRUCTURE (lessonType: "code")
 
-4. **documentationdata** - Array of API reference objects for each class in the abstracted code. Each object has this shape:
-   [{
-     "className": "string",
-     "description": "string",
-     "usage": "multi-line code example string",
-     "methods": [{ "method": "signature", "description": "string", "returnType": "string" }],
-     "properties": [{ "type": "Read/Write or Read-Only", "property": "name", "dataType": "type", "description": "string" }]
-   }]
-   - Include documentation for ALL classes defined in abstracted code
-   - Each class should have its own object in the array
-
-5. **hints** - Array of hint objects: [{ "id": "kebab-case-id", "title": "string", "content": "string with backtick code snippets" }]
-    - These are tips that students can optionally view; fill in with information where the student may get stuck.
-6. **unittests** - A JavaScript string containing a \`runTests(studentFunction)\` function that:
-   - Creates test data (instances of the abstracted class)
-   - Calls the student function with that data
-   - Returns an array of { title: string, passed: boolean, message: string }
-   - Tests at least 3 different cases
-   - Validates correctness of the student's output
-   - **CRITICAL**: Use string concatenation (+ operator) for error messages, NOT template literals. Example: 'Expected ' + expected + ', got ' + actual instead of \`Expected \${expected}, got \${actual}\`
-
-7. **demodata** - A JavaScript string that creates demonstration data for the Output tab. This will be fed to the student function. Should:
-   - Resemble the first test case in the unit tests.
-   - Should always be an array.
-      - The array should fit into the function signature of the student function. For example, if the student function takes two parameters, the demoData array should have two elements corresponding to those parameters.
-   - **CRITICAL: Store the final demo data in a variable called \`demoData\`** (this exact name is required - do not use any other variable name)
-   - Stored in an array in the case of multiple parameters. 
-   - Example for RSA: \`const msg1 = new Message("Hello"); const msg2 = new Message("World"); const demoData = [msg1, msg2];\`
-   - **The variable MUST be named \`demoData\` regardless of the domain**
-
+1. **lesson** - Markdown content teaching the concept
+2. **code** - JavaScript function stub students complete
+3. **abstracted** - Helper classes/functions student uses
+4. **documentationdata** - API reference for abstracted code
+5. **hints** - Tips for stuck students
+6. **unittests** - Test function validating student code
+7. **demodata** - Demo data for output tab
 ${
   includeVisualizer
-    ? `8. **visualizer** (OPTIONAL) - Configuration object for data visualization. This visualizes the RETURN VALUE of the student's function. Works with ANY return type - primitives (string/number/boolean) or structured data (objects/arrays). Structure:
-   {
-     "template": "graph" | "array" | "chart" | "grid" | "table",
-     "dataMapping": {
-       // For graph: "nodes", "edges", "nodeId", "nodeLabel", "edgeSource", "edgeTarget"
-       // For array: "elements", "value", "state"
-       // For chart: "series", "xAxis", "yAxis"
-       // For grid: "grid", "rows", "cols"
-       // Specify paths to data properties in the student's return value
-       // NOTE: If return value is a primitive (string/number/boolean), leave dataMapping empty
-       //       The system will auto-wrap primitives into visualizable structures
-     },
-     "style": {
-       "colorScheme": "chemistry" | "biology" | "physics" | "math" | "cs" | "default",
-       "showLabels": true/false,
-       "showValues": true/false,
-       "nodeShape": "circle" | "square",
-       "edgeStyle": "line" | "arrow" | "dashed"
-     },
-     "layout": {
-       "type": "force-directed" | "circular" | "hierarchical" | "grid",
-       "spacing": number
-     }
-   }
-   
-   TEMPLATE GUIDELINES:
-   - **graph**: Use for molecular structures, networks, graph algorithms, trees, state machines
-     - Example: Chemistry molecules (nodes=atoms, edges=bonds), computer science graphs
-     - Return value should have: { nodes: [...], edges: [...] }
-   - **array**: Use for sorting algorithms, array manipulations, sequences, STRING OUTPUT
-     - Example: Merge sort visualization, array transformations, DNA sequences
-     - Return value can be: string (auto-converted to character array) OR array of elements
-   - **chart**: Use for mathematical functions, time series, physics data
-     - Example: Projectile motion, function graphs, reaction rates
-     - Return value should have: { series: [...] } or { xAxis: [...], yAxis: [...] }
-   - **grid**: Use for 2D arrays, matrices, cellular automata, pathfinding
-     - Example: A* algorithm, game of life, heat maps
-     - Return value should be: 2D array OR { grid: [...], rows: n, cols: m }
-   - **table**: Use for structured data, comparisons, properties, NUMBER/BOOLEAN OUTPUT
-     - Example: Element properties, test results, data comparisons, single values
-     - Return value can be: array of objects OR single primitive (auto-converted)
-   
-   PRIMITIVE RETURN VALUES:
-   - Strings → automatically visualized as character array with "array" template
-   - Numbers/Booleans → automatically visualized as property table with "table" template
-   - You can include visualizer config even if function returns a primitive!
-`
+    ? `8. **visualizer** - Optional visualization config`
     : ""
 }
 
-IMPORTANT RULES:
-- The abstracted code, default code, and unit tests must all be plain JavaScript strings (no TypeScript).
-- The abstracted code must define all classes/functions the student and tests use.
-- The unit tests must create their own test data using the classes from abstracted code.
-- Each lesson should build on the previous one in complexity.
-- The function name in \`code\` must be consistent across all lessons (same function name).
-- Make the course genuinely educational and progressively challenging.
+---
+
+## QUIZ LESSON STRUCTURE (lessonType: "quiz")
+
+1. **lesson** - Markdown content for the topic
+2. **quizData** - Quiz configuration object:
+   {
+     "questions": [
+       {
+         "id": "q1",
+         "question": "string",
+         "type": "multiple_choice" | "true_false" | "fill_blank" | "matching",
+         "options": ["A", "B", "C", "D"] (required for multiple_choice),
+         "correctAnswer": "string or array for matching",
+         "explanation": "optional explanation shown after answering"
+       }
+     ],
+     "passingScore": 70,
+     "timeLimit": 5 (optional, in minutes),
+     "showExplanations": true
+   }
+
+---
 
 CRITICAL JSON OUTPUT REQUIREMENTS:
-- Return ONLY the raw JSON object - no markdown, no code fences, no explanatory text before or after
-- Do NOT wrap the response in \`\`\`json or \`\`\` code fences
-- Do NOT include any text before the opening { or after the closing }
-- Ensure all strings are properly escaped (use \\\\ for backslashes, \\" for quotes)
-- Do NOT use trailing commas in arrays or objects
-- All property names must be in double quotes
-- All string values must be in double quotes (not single quotes)
+- Return ONLY raw JSON - no markdown, no code fences
+- Each lesson MUST have a "lessonType" field: "code" or "quiz"
+- For code lessons, include all code-related fields
+- For quiz lessons, include quizData instead of code fields
 
-Respond with ONLY valid JSON matching this exact schema:
+Respond with ONLY valid JSON:
 {
   "courseTitle": "string",
   "courseSlug": "lowercase-kebab-case",
-  "description": "one sentence course description",
+  "description": "one sentence description",
   "lessons": [
     {
+      "lessonType": "code" | "quiz",
       "lessonTitle": "string",
       "lesson": "markdown string",
-      "code": "javascript function stub string",
-      "abstracted": "javascript class/helper code string",
-      "documentationdata": [{ "className": "...", "description": "...", "usage": "...", "methods": [...], "properties": [...] }],
-      "hints": [{ "id": "...", "title": "...", "content": "..." }],
-      "unittests": "javascript runTests function string",
-      "demodata": "javascript demo data creation string"${
-        includeVisualizer
-          ? `,
-      "visualizer": { "template": "...", "dataMapping": {...}, "style": {...}, "layout": {...} }`
-          : ""
-      }
+      ... (code fields OR quizData based on lessonType)
     }
   ]
 }`;
@@ -465,8 +412,10 @@ export async function POST(request: NextRequest) {
 
       for (let i = 0; i < courseData.lessons.length; i++) {
         const lessonData = courseData.lessons[i];
+        const lessonType = lessonData.lessonType || "code";
+
         await sendUpdate(
-          `Creating lesson ${i + 1} of ${courseData.lessons.length}: ${lessonData.lessonTitle}`,
+          `Creating lesson ${i + 1} of ${courseData.lessons.length}: ${lessonData.lessonTitle} (${lessonType})`,
         );
 
         const lesson = await prisma.lesson.create({
@@ -474,22 +423,35 @@ export async function POST(request: NextRequest) {
             index: i + 1,
             title: lessonData.lessonTitle,
             courseId: course.id,
+            lessonType,
           },
         });
 
-        await prisma.lessonContent.create({
-          data: {
-            lessonId: lesson.id,
-            lessonText: lessonData.lesson,
-            defaultCode: lessonData.code,
-            abstractedCode: lessonData.abstracted,
-            testRunner: lessonData.unittests,
-            demoData: lessonData.demodata,
-            documentationData: lessonData.documentationdata,
-            hintsData: lessonData.hints,
-            visualizerConfig: lessonData.visualizer ?? undefined,
-          },
-        });
+        if (lessonType === "quiz") {
+          const quizLesson = lessonData as QuizLessonData;
+          await prisma.lessonContent.create({
+            data: {
+              lessonId: lesson.id,
+              lessonText: quizLesson.lesson,
+              quizData: quizLesson.quizData,
+            },
+          });
+        } else {
+          const codeLesson = lessonData as CodeLessonData;
+          await prisma.lessonContent.create({
+            data: {
+              lessonId: lesson.id,
+              lessonText: codeLesson.lesson,
+              defaultCode: codeLesson.code,
+              abstractedCode: codeLesson.abstracted,
+              testRunner: codeLesson.unittests,
+              demoData: codeLesson.demodata,
+              documentationData: codeLesson.documentationdata,
+              hintsData: codeLesson.hints,
+              visualizerConfig: codeLesson.visualizer ?? undefined,
+            },
+          });
+        }
       }
 
       const courseMeta = {
@@ -504,6 +466,7 @@ export async function POST(request: NextRequest) {
         lessons: courseData.lessons.map((l, i) => ({
           index: i + 1,
           title: l.lessonTitle,
+          lessonType: l.lessonType || "code",
         })),
       };
 

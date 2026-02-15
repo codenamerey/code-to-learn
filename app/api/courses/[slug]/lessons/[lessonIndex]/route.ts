@@ -21,6 +21,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       include: {
         course: true,
         lessonContent: true,
+        sublessons: {
+          include: { sublessonContent: true },
+          orderBy: { index: "asc" },
+        },
       },
     });
 
@@ -32,25 +36,54 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
 
     const content = lesson.lessonContent;
-    const defaultCode = content.defaultCode;
-    const functionNameMatch = defaultCode.match(/function\s+(\w+)\s*\(/);
-    const functionName = functionNameMatch ? functionNameMatch[1] : "main";
+    const lessonType = lesson.lessonType || "code";
 
-    return NextResponse.json({
+    const response: any = {
       success: true,
       lessonId: lesson.id,
       lessonIndex: lesson.index,
+      lessonType,
       lesson: content.lessonText,
-      defaultCode: content.defaultCode,
-      abstractedCode: content.abstractedCode,
-      testRunner: content.testRunner,
       documentationData: content.documentationData,
       hints: content.hintsData,
-      demoData: content.demoData,
-      functionName,
-      includeVisualizer: lesson.course.includeVisualizer,
-      visualizerConfig: content.visualizerConfig,
-    });
+      sublessons: lesson.sublessons.map((s: any) => ({
+        id: s.id,
+        index: s.index,
+        title: s.title,
+        videoUrl: s.videoUrl,
+        videoStart: s.videoStart,
+        videoEnd: s.videoEnd,
+        lessonType: s.lessonType,
+        lessonText: s.sublessonContent?.lessonText || "",
+        defaultCode: s.sublessonContent?.defaultCode || "",
+        abstractedCode: s.sublessonContent?.abstractedCode || "",
+        testRunner: s.sublessonContent?.testRunner || "",
+        demoData: s.sublessonContent?.demoData || "",
+        documentationData: s.sublessonContent?.documentationData || [],
+        hints: s.sublessonContent?.hintsData || [],
+        quizData: s.sublessonContent?.quizData,
+      })),
+    };
+
+    if (lessonType === "code") {
+      const defaultCode = content.defaultCode;
+      const functionNameMatch = defaultCode.match(/function\s+(\w+)\s*\(/);
+      const functionName = functionNameMatch ? functionNameMatch[1] : "main";
+
+      response.defaultCode = content.defaultCode;
+      response.abstractedCode = content.abstractedCode;
+      response.testRunner = content.testRunner;
+      response.demoData = content.demoData;
+      response.functionName = functionName;
+      response.includeVisualizer = lesson.course.includeVisualizer;
+      response.visualizerConfig = content.visualizerConfig;
+    }
+
+    if (lessonType === "quiz") {
+      response.quizData = content.quizData;
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },

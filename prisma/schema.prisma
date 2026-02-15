@@ -15,6 +15,7 @@ model User {
   updatedAt     DateTime       @updatedAt
   courseProgress CourseProgress[]
   bookmarkedCourses CourseBookmark[]
+  sublessonProgress SublessonProgress[]
 
   @@map("users")
 }
@@ -81,7 +82,9 @@ model Lesson {
   title         String
   courseId      Int
   course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonType    String        @default("code")
   lessonContent LessonContent?
+  sublessons    Sublesson[]
   progress      CourseProgress[]
   createdAt     DateTime      @default(now())
 
@@ -94,13 +97,64 @@ model LessonContent {
   lessonId          Int    @unique
   lesson            Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   lessonText        String
-  defaultCode       String
-  abstractedCode    String
-  testRunner        String
+  defaultCode       String @default("")
+  abstractedCode    String @default("")
+  testRunner        String @default("")
   demoData          String @default("")
-  documentationData Json
-  hintsData         Json
+  documentationData Json   @default("[]")
+  hintsData         Json   @default("[]")
   visualizerConfig  Json?
+  quizData          Json?
 
   @@map("lesson_contents")
+}
+
+model Sublesson {
+  id              Int              @id @default(autoincrement())
+  index           Int
+  title           String
+  videoUrl        String?
+  videoStart      Int              @default(0)
+  videoEnd        Int?
+  lessonType      String           @default("quiz")
+  lessonId        Int
+  lesson          Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  sublessonContent SublessonContent?
+  progress        SublessonProgress[]
+  createdAt       DateTime         @default(now())
+
+  @@unique([lessonId, index])
+  @@map("sublessons")
+}
+
+model SublessonContent {
+  id                Int       @id @default(autoincrement())
+  sublessonId       Int       @unique
+  sublesson         Sublesson @relation(fields: [sublessonId], references: [id], onDelete: Cascade)
+  lessonText        String
+  defaultCode       String    @default("")
+  abstractedCode    String    @default("")
+  testRunner        String    @default("")
+  demoData          String    @default("")
+  documentationData Json      @default("[]")
+  hintsData         Json      @default("[]")
+  visualizerConfig  Json?
+  quizData          Json?
+
+  @@map("sublesson_contents")
+}
+
+model SublessonProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sublessonId Int
+  sublesson  Sublesson @relation(fields: [sublessonId], references: [id], onDelete: Cascade)
+  completed  Boolean  @default(false)
+  solution   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, sublessonId])
+  @@map("sublesson_progress")
 }

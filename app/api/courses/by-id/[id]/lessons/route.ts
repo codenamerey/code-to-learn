@@ -7,17 +7,39 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-interface CreateLessonRequest {
+interface CreateCodeLessonRequest {
+  lessonType?: "code";
   title: string;
   lessonText: string;
-  defaultCode: string;
-  abstractedCode: string;
-  testRunner: string;
+  defaultCode?: string;
+  abstractedCode?: string;
+  testRunner?: string;
   demoData?: string;
-  documentationData: any;
-  hintsData: any;
+  documentationData?: any;
+  hintsData?: any;
   visualizerConfig?: any;
 }
+
+interface CreateQuizLessonRequest {
+  lessonType: "quiz";
+  title: string;
+  lessonText: string;
+  quizData: {
+    questions: {
+      id: string;
+      question: string;
+      type: "multiple_choice" | "true_false" | "fill_blank" | "matching";
+      options?: string[];
+      correctAnswer: string | string[];
+      explanation?: string;
+    }[];
+    passingScore?: number;
+    timeLimit?: number;
+    showExplanations?: boolean;
+  };
+}
+
+type CreateLessonRequest = CreateCodeLessonRequest | CreateQuizLessonRequest;
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
@@ -51,28 +73,42 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const nextIndex = course.lessons.length > 0 ? course.lessons[0].index + 1 : 1;
+    const lessonType = body.lessonType || "code";
 
     const lesson = await prisma.lesson.create({
       data: {
         index: nextIndex,
         title: body.title,
         courseId: courseId,
+        lessonType,
       },
     });
 
-    await prisma.lessonContent.create({
-      data: {
-        lessonId: lesson.id,
-        lessonText: body.lessonText || "",
-        defaultCode: body.defaultCode || "",
-        abstractedCode: body.abstractedCode || "",
-        testRunner: body.testRunner || "",
-        demoData: body.demoData || "",
-        documentationData: body.documentationData || [],
-        hintsData: body.hintsData || [],
-        visualizerConfig: body.visualizerConfig ?? undefined,
-      },
-    });
+    if (lessonType === "quiz") {
+      const quizLesson = body as CreateQuizLessonRequest;
+      await prisma.lessonContent.create({
+        data: {
+          lessonId: lesson.id,
+          lessonText: quizLesson.lessonText || "",
+          quizData: quizLesson.quizData,
+        },
+      });
+    } else {
+      const codeLesson = body as CreateCodeLessonRequest;
+      await prisma.lessonContent.create({
+        data: {
+          lessonId: lesson.id,
+          lessonText: codeLesson.lessonText || "",
+          defaultCode: codeLesson.defaultCode || "",
+          abstractedCode: codeLesson.abstractedCode || "",
+          testRunner: codeLesson.testRunner || "",
+          demoData: codeLesson.demoData || "",
+          documentationData: codeLesson.documentationData || [],
+          hintsData: codeLesson.hintsData || [],
+          visualizerConfig: codeLesson.visualizerConfig ?? undefined,
+        },
+      });
+    }
 
     await prisma.course.update({
       where: { id: courseId },
