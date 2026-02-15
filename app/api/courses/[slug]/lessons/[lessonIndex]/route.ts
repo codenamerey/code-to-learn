@@ -38,6 +38,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({
       success: true,
+      lessonId: lesson.id,
+      lessonIndex: lesson.index,
       lesson: content.lessonText,
       defaultCode: content.defaultCode,
       abstractedCode: content.abstractedCode,

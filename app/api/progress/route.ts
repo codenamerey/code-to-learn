@@ -17,25 +17,70 @@ export async function GET(request: NextRequest) {
     const progress = await prisma.courseProgress.findMany({
       where: { userId },
       include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            lessonCount: true,
-          },
-        },
         lesson: {
-          select: {
-            id: true,
-            index: true,
-            title: true,
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                lessonCount: true,
+              },
+            },
           },
         },
       },
     });
 
-    return NextResponse.json({ success: true, progress });
+    const groupedProgress: Record<number, {
+      courseId: number;
+      courseTitle: string;
+      courseSlug: string;
+      lessonCount: number;
+      completedLessons: number[];
+      currentLesson: number | null;
+    }> = {};
+
+    for (const p of progress) {
+      if (!p.lesson) continue;
+      const courseId = p.lesson.course.id;
+      if (!groupedProgress[courseId]) {
+        groupedProgress[courseId] = {
+          courseId,
+          courseTitle: p.lesson.course.title,
+          courseSlug: p.lesson.course.slug,
+          lessonCount: p.lesson.course.lessonCount,
+          completedLessons: [],
+          currentLesson: null,
+        };
+      }
+      if (p.completed) {
+        groupedProgress[courseId].completedLessons.push(p.lesson.index);
+      }
+    }
+
+    for (const key of Object.keys(groupedProgress)) {
+      const courseId = parseInt(key);
+      const courseProgress = progress.filter(p => p.lesson?.course.id === courseId);
+      if (courseProgress.length > 0) {
+        const maxIndex = Math.max(...courseProgress.map(p => p.lesson?.index || 0));
+        groupedProgress[courseId].currentLesson = maxIndex;
+      }
+    }
+
+    const lessonProgress = progress.map(p => ({
+      lessonId: p.lessonId,
+      lessonIndex: p.lesson?.index,
+      courseId: p.lesson?.course.id,
+      completed: p.completed,
+      solution: p.solution,
+    }));
+
+    return NextResponse.json({ 
+      success: true, 
+      progress: Object.values(groupedProgress), 
+      lessonProgress 
+    });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: (error as Error).message },
@@ -55,11 +100,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { courseId, lessonId, completed } = body;
+    const { lessonId, completed, solution } = body;
 
-    if (!courseId) {
+    if (!lessonId) {
       return NextResponse.json(
-        { success: false, error: "courseId is required" },
+        { success: false, error: "lessonId is required" },
         { status: 400 },
       );
     }
@@ -72,28 +117,32 @@ export async function POST(request: NextRequest) {
 
     const progress = await prisma.courseProgress.upsert({
       where: {
-        userId_courseId: {
+        userId_lessonId: {
           userId,
-          courseId: parseInt(courseId, 10),
+          lessonId: parseInt(lessonId, 10),
         },
       },
       update: {
-        lessonId: lessonId ? parseInt(lessonId, 10) : null,
-        completed: completed ?? false,
+        completed: completed ?? true,
+        solution: solution ?? undefined,
       },
       create: {
         userId,
-        courseId: parseInt(courseId, 10),
-        lessonId: lessonId ? parseInt(lessonId, 10) : null,
-        completed: completed ?? false,
+        lessonId: parseInt(lessonId, 10),
+        completed: completed ?? true,
+        solution: solution ?? null,
       },
       include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-            lessonCount: true,
+        lesson: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                lessonCount: true,
+              },
+            },
           },
         },
       },

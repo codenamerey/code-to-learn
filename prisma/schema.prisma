@@ -23,15 +23,14 @@ model CourseProgress {
   id         String   @id @default(cuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId   Int
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessonId   Int?
-  lesson     Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId   Int
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   completed  Boolean  @default(false)
+  solution   String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@unique([userId, courseId])
+  @@unique([userId, lessonId])
   @@map("course_progress")
 }
 
@@ -69,7 +68,6 @@ model Course {
   categoryId        Int
   category          Category  @relation(fields: [categoryId], references: [id])
   lessons           Lesson[]
-  progress          CourseProgress[]
   bookmarks         CourseBookmark[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

@@ -15,12 +15,14 @@ import {
   TemplateRenderer,
   VisualizerConfig,
 } from "@/lib/visualizers/templates";
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, useAuth } from "@clerk/nextjs";
 import { Check, ChevronLeft, ChevronRight, Bookmark } from "lucide-react";
 
 import "@/lib/visualizers";
 
 interface LessonData {
+  lessonId: number;
+  lessonIndex: number;
   lesson: string;
   defaultCode: string;
   abstractedCode: string;
@@ -38,56 +40,80 @@ interface CourseData {
   title: string;
   slug: string;
   lessonCount: number;
-  lessons: { index: number; title: string }[];
+  lessons: { id: number; index: number; title: string }[];
 }
 
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const slug = params.slug as string;
   const lessonIndex = parseInt(params.lessonIndex as string, 10);
 
   const [lessonData, setLessonData] = useState<LessonData | null>(null);
   const [courseData, setCourseData] = useState<CourseData | null>(null);
   const [code, setCode] = useState("");
+  const [savedSolution, setSavedSolution] = useState<string | null>(null);
   const [output, setOutput] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [visualizerData, setVisualizerData] = useState(null);
   const [tests, setTests] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    fetchLessonData();
-    checkAuth();
+    if (slug) {
+      fetchCourseData();
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    if (slug && lessonIndex) {
+      fetchLessonData();
+    }
   }, [slug, lessonIndex]);
 
-  const checkAuth = async () => {
+  useEffect(() => {
+    if (isLoaded && isSignedIn && courseData) {
+      fetchProgress();
+      checkBookmark();
+    }
+  }, [isLoaded, isSignedIn, courseData]);
+
+  const fetchCourseData = async () => {
     try {
-      const response = await fetch("/api/user");
-      setIsSignedIn(response.ok);
-      if (response.ok) {
-        fetchProgress();
-        checkBookmark();
+      const response = await fetch(`/api/courses/${slug}`);
+      const data = await response.json();
+      if (data.success) {
+        setCourseData(data.course);
       }
-    } catch {
-      setIsSignedIn(false);
+    } catch (err) {
+      console.error("Error fetching course:", err);
     }
   };
 
   const fetchProgress = async () => {
+    if (!courseData) return;
     try {
       const response = await fetch("/api/progress");
       const data = await response.json();
-      if (data.success) {
-        const courseProgress = data.progress.find(
-          (p: any) => p.courseId === courseData?.id,
+      if (data.success && data.lessonProgress) {
+        const courseProgress = data.lessonProgress.filter(
+          (p: any) => p.courseId === courseData.id
         );
-        if (courseProgress) {
-          setIsCompleted(courseProgress.completed);
+        const completed = courseProgress
+          .filter((p: any) => p.completed)
+          .map((p: any) => p.lessonIndex);
+        setCompletedLessons(completed);
+        
+        const currentLessonProgress = courseProgress.find(
+          (p: any) => p.lessonIndex === lessonIndex
+        );
+        if (currentLessonProgress?.solution) {
+          setSavedSolution(currentLessonProgress.solution);
+          setCode(currentLessonProgress.solution);
         }
       }
     } catch (err) {
@@ -96,10 +122,11 @@ export default function LessonPage() {
   };
 
   const checkBookmark = async () => {
+    if (!courseData) return;
     try {
       const response = await fetch("/api/bookmarks");
       const data = await response.json();
-      if (data.success && courseData) {
+      if (data.success) {
         const bookmarked = data.bookmarks.some(
           (b: any) => b.courseId === courseData.id,
         );
@@ -123,14 +150,10 @@ export default function LessonPage() {
 
       const data = await response.json();
       setLessonData(data);
-      setCode(data.defaultCode);
-      setError(null);
-
-      const courseResponse = await fetch(`/api/courses/${slug}/lessons/1`);
-      if (courseResponse.ok) {
-        // Get course info from the first lesson response
-        // We need to fetch course details separately
+      if (!savedSolution) {
+        setCode(data.defaultCode);
       }
+      setError(null);
     } catch (err) {
       setError((err as Error).message);
       console.error("Error fetching lesson:", err);
@@ -181,19 +204,20 @@ export default function LessonPage() {
   };
 
   const markComplete = async () => {
-    if (!courseData) return;
+    if (!lessonData) return;
     try {
       const response = await fetch("/api/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          courseId: courseData.id,
-          lessonId: lessonIndex,
+          lessonId: lessonData.lessonId,
           completed: true,
+          solution: code,
         }),
       });
-      if (response.ok) {
-        setIsCompleted(true);
+      const data = await response.json();
+      if (data.success) {
+        setCompletedLessons((prev) => [...prev, lessonIndex]);
       }
     } catch (err) {
       console.error("Error marking complete:", err);
@@ -245,6 +269,9 @@ export default function LessonPage() {
     );
   }
 
+  const currentLesson = courseData?.lessons.find((l) => l.index === lessonIndex);
+  const isCompleted = completedLessons.includes(lessonIndex);
+
   return (
     <div className="flex flex-col h-screen bg-gray-200 dark:bg-black">
       <header className="flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border-b">
@@ -256,9 +283,14 @@ export default function LessonPage() {
           >
             <ChevronLeft size={20} />
           </button>
-          <span className="font-medium">
-            Lesson {lessonIndex}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-medium">
+              Lesson {lessonIndex}{currentLesson ? `: ${currentLesson.title}` : ""}
+            </span>
+            {courseData && (
+              <span className="text-xs text-gray-500">{courseData.title}</span>
+            )}
+          </div>
           <button
             onClick={() => goToLesson(lessonIndex + 1)}
             disabled={!courseData || lessonIndex >= courseData.lessonCount}
