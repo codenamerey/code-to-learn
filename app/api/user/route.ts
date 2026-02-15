@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       coursesInProgress: user._count.courseProgress,
-      coursesCompleted: user.courseProgress.filter((p) => p).length,
+      coursesCompleted: user.courseProgress.length,
       bookmarks: user._count.bookmarkedCourses,
     };
 

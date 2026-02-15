@@ -1,13 +1,13 @@
 "use client";
 
-import { useContext, useState, useEffect } from "react";
-import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
+import { useState, useEffect } from "react";
 import { Scrollbars } from "react-custom-scrollbars";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Radical } from "lucide-react";
 
 type CardProps = {
   onCardClick: (id: number) => void;
+  activeCategory: number;
 };
 
 interface Category {
@@ -19,8 +19,10 @@ interface Category {
   };
 }
 
-export default function CategoriesSection({ onCardClick }: CardProps) {
-  const activeCategory = useContext(ActiveCategoryContext);
+export default function CategoriesSection({
+  onCardClick,
+  activeCategory,
+}: CardProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,12 +64,16 @@ export default function CategoriesSection({ onCardClick }: CardProps) {
       <Card
         key={category.id ?? index}
         onClick={() => onCardClick(category.id)}
-        className="flex flex-col items-center justify-between p-2 cursor-pointer transition-all duration-300 transform h-38 w-38 max-w-38"
+        className={`flex flex-col items-center justify-between p-2 cursor-pointer transition-all duration-300 transform h-38 w-38 max-w-38 ${
+          activeCategory === category.id
+            ? "ring-2 ring-blue-500 bg-blue-50"
+            : ""
+        }`}
       >
         <Radical
-          className={`h-22 w-22 border rounded-lg transition-all duration-500 hover:-translate-y-1 hover:scale-105 hover:shadow-lg  ${
+          className={`h-22 w-22 border rounded-lg transition-all duration-500 hover:-translate-y-1 hover:scale-105 hover:shadow-lg ${
             activeCategory === category.id
-              ? "ring-2 ring-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
+              ? "text-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.6)]"
               : "shadow-md"
           }`}
         />
@@ -95,7 +101,7 @@ export default function CategoriesSection({ onCardClick }: CardProps) {
         </div>
       ) : (
         <Scrollbars autoHeight autoHeightMax={600} autoHide>
-          <div className="flex gap-4 w-full p-4 overflow-x-auto ">
+          <div className="flex gap-4 w-full p-4 overflow-x-auto">
             {renderCategoryCards()}
           </div>
         </Scrollbars>

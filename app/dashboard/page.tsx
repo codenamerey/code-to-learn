@@ -1,40 +1,65 @@
 "use client";
 
-import LessonsSection from "@/components/CoursesSection";
 import NavBar from "@/components/NavBar";
 import CategoriesSection from "@/components/CategoriesSection";
-import { useState } from "react";
-import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
+import { useState, useEffect } from "react";
 import CoursesSection from "@/components/CoursesSection";
 
 export default function Dashboard() {
-  const [activeCategory, setActiveCategory] = useState(1);
+  const [activeCategory, setActiveCategory] = useState<number | null>(null);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
-  const handleCardClick = (cardId: number) => {
-    setActiveCategory(cardId);
+  useEffect(() => {
+    const initCategory = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        const data = await response.json();
+        if (data.success && data.categories.length > 0) {
+          setActiveCategory(data.categories[0].id);
+        }
+        setCategoriesLoaded(true);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+        setCategoriesLoaded(true);
+      }
+    };
+    initCategory();
+  }, []);
+
+  const handleCardClick = (categoryId: number) => {
+    setActiveCategory(categoryId);
   };
 
-  return (
-    <ActiveCategoryContext.Provider value={activeCategory}>
-      <main className="p-4 bg-[#EAEAEA]">
-        <section className="min-h-screen flex flex-col items-center bg-[#EAEAEA] ">
+  if (!categoriesLoaded || activeCategory === null) {
+    return (
+      <main className="p-4 bg-[#EAEAEA] min-h-screen">
+        <section className="flex flex-col items-center bg-[#EAEAEA]">
           <NavBar title="Dashboard" />
           <section className="w-[47%] border h-auto p-6 bg-white rounded-lg">
-            <CategoriesSection onCardClick={handleCardClick} />
-            <section className="pt-6 w-full">
-              <div className="flex gap-2 items-center mb-4">
-                <h2 className="text-2xl font-bold">Courses</h2>
-                <input
-                  type="text"
-                  className="border border-black rounded-md w-[295px] bg-[rgba(0,0,0,8%)] pl-3"
-                  placeholder="Find lessons..."
-                />
-              </div>
-              <CoursesSection />
-            </section>
+            <div className="text-center py-8 text-gray-500">Loading...</div>
           </section>
         </section>
       </main>
-    </ActiveCategoryContext.Provider>
+    );
+  }
+
+  return (
+    <main className="p-4 bg-[#EAEAEA] min-h-screen">
+      <section className="flex flex-col items-center bg-[#EAEAEA]">
+        <NavBar title="Dashboard" />
+        <section className="w-[47%] border h-auto p-6 bg-white rounded-lg">
+          <CategoriesSection
+            onCardClick={handleCardClick}
+            activeCategory={activeCategory}
+          />
+          <section className="pt-6 w-full">
+            <div className="flex gap-2 items-center mb-4">
+              <h2 className="text-2xl font-bold">Courses</h2>
+            </div>
+            <CoursesSection activeCategory={activeCategory} />
+          </section>
+        </section>
+      </section>
+    </main>
   );
 }

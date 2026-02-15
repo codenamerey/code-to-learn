@@ -1,7 +1,6 @@
 "use client";
 
-import { useContext, useState, useEffect } from "react";
-import { ActiveCategoryContext } from "@/context/ActiveCategoryContext";
+import { useState, useEffect } from "react";
 import { Card, CardTitle, CardDescription } from "./ui/card";
 import { Brain, WandSparkles } from "lucide-react";
 import { AIGeneratorModal } from "@/app/modals/aigenerator.modal";
@@ -15,21 +14,31 @@ interface Course {
   description: string;
   learnCount: number;
   lessonCount: number;
+  categoryId: number;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+  };
   lessons: {
     index: number;
     title: string;
   }[];
 }
 
-export default function CoursesSection() {
-  const category = useContext(ActiveCategoryContext);
+interface CoursesSectionProps {
+  activeCategory?: number;
+}
+
+export default function CoursesSection({
+  activeCategory,
+}: CoursesSectionProps = {}) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch courses from API
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -55,9 +64,13 @@ export default function CoursesSection() {
   };
 
   const handleCourseClick = (course: Course) => {
-    // Navigate to first lesson of the course
     router.push(`/courses/${course.slug}/lessons/1`);
   };
+
+  const filteredCourses =
+    activeCategory !== undefined
+      ? courses.filter((course) => course.categoryId === activeCategory)
+      : courses;
 
   const renderCourses = () => {
     if (loading) {
@@ -94,12 +107,12 @@ export default function CoursesSection() {
           </CardTitle>
         </Card>
 
-        {courses.length === 0 ? (
+        {filteredCourses.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No courses available yet. Create your first course!
+            No courses in this category yet. Create one!
           </div>
         ) : (
-          courses.map((course) => (
+          filteredCourses.map((course) => (
             <Card
               key={course.id}
               onClick={() => handleCourseClick(course)}

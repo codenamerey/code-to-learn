@@ -61,14 +61,14 @@ export async function GET(request: NextRequest) {
 
     for (const key of Object.keys(groupedProgress)) {
       const courseId = parseInt(key);
-      const courseProgress = progress.filter(p => p.lesson?.course.id === courseId);
+      const courseProgress = progress.filter((p: typeof progress[0]) => p.lesson?.course.id === courseId);
       if (courseProgress.length > 0) {
-        const maxIndex = Math.max(...courseProgress.map(p => p.lesson?.index || 0));
+        const maxIndex = Math.max(...courseProgress.map((p: typeof progress[0]) => p.lesson?.index || 0));
         groupedProgress[courseId].currentLesson = maxIndex;
       }
     }
 
-    const lessonProgress = progress.map(p => ({
+    const lessonProgress = progress.map((p: typeof progress[0]) => ({
       lessonId: p.lessonId,
       lessonIndex: p.lesson?.index,
       courseId: p.lesson?.course.id,
