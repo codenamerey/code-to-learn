@@ -119,7 +119,7 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
     const passed = score >= passingScore;
 
     return (
-      <div className="flex flex-col items-center py-8">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] py-8">
         <div
           className={`p-4 rounded-full mb-4 ${
             passed ? "bg-green-100" : "bg-red-100"
@@ -204,7 +204,7 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
   const question = questions[currentQuestion];
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto flex flex-col justify-center min-h-[60vh]">
       {timeRemaining !== null && (
         <div className="flex justify-between items-center mb-4">
           <span className="text-sm text-gray-600">
