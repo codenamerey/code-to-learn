@@ -172,8 +172,10 @@ async function executeJavaScript(
           ? `
         ${testRunner}
         try {
-          if (typeof runTests === 'function') {
-            tests = runTests(${functionName || "main"});
+          if (typeof test === 'function') {
+            tests = test();
+          } else if (typeof runTests === 'function') {
+            tests = runTests();
           }
         } catch (e) {
           console.error('Error running tests:', e.message);

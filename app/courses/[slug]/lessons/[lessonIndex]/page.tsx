@@ -105,6 +105,7 @@ export default function LessonPage() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [activeSublesson, setActiveSublesson] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"code" | "quiz">("code");
 
   useEffect(() => {
     if (slug) {
@@ -134,8 +135,15 @@ export default function LessonPage() {
   useEffect(() => {
     if (activeSublesson && lessonData?.sublessons) {
       const sublesson = lessonData.sublessons.find(s => s.id === activeSublesson);
-      if (sublesson && sublesson.lessonType === "code" && sublesson.defaultCode) {
-        setSublessonCode(sublesson.defaultCode);
+      if (sublesson) {
+        if (sublesson.defaultCode) {
+          setSublessonCode(sublesson.defaultCode);
+        } else {
+          setSublessonCode("");
+        }
+        if (sublesson.defaultCode && sublesson.quizData) {
+          setActiveTab("code");
+        }
       }
     }
   }, [activeSublesson, lessonData?.sublessons]);
@@ -368,9 +376,10 @@ export default function LessonPage() {
   const sublessons = lessonData.sublessons || [];
   const hasSublessons = sublessons.length > 0;
   const activeSublessonData = activeSublesson ? sublessons.find(s => s.id === activeSublesson) : null;
+  const hasBothCodeAndQuiz = activeSublessonData?.defaultCode && activeSublessonData?.quizData;
 
   const renderVideo = (videoUrl?: string, videoStart?: number, videoEnd?: number, title?: string) => {
-    if (!videoStart) return null;
+    if (videoStart === undefined || videoStart === null) return null;
     const videoId = videoUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1] || "8ssjKR7nNck";
     return (
       <div className="mb-4" style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden" }}>
@@ -430,6 +439,49 @@ export default function LessonPage() {
     if (!data) return null;
 
     const type = isSublessonMode ? data.lessonType : lessonType;
+    const showBoth = isSublessonMode && hasBothCodeAndQuiz;
+
+    if (showBoth) {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="flex border-b bg-gray-50 dark:bg-gray-900">
+            <button
+              onClick={() => setActiveTab("code")}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "code"
+                  ? "border-b-2 border-[#0995BC] text-[#0995BC]"
+                  : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              <Code size={16} />
+              Code Challenge
+            </button>
+            <button
+              onClick={() => setActiveTab("quiz")}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === "quiz"
+                  ? "border-b-2 border-[#0995BC] text-[#0995BC]"
+                  : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              <QuizIcon size={16} />
+              Quiz
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            {activeTab === "code" ? (
+              <ResizablePanelGroup orientation="vertical" className="h-full">
+                {renderCodePanel(sublessonCode, setSublessonCode, executeSublessonCode)}
+              </ResizablePanelGroup>
+            ) : (
+              <div className="h-full overflow-auto p-4">
+                {renderQuizPanel(data.quizData)}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
 
     if (type === "code") {
       return (
