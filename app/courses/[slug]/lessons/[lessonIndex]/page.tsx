@@ -17,7 +17,8 @@ import {
   VisualizerConfig,
 } from "@/lib/visualizers/templates";
 import { SignedIn, SignedOut, SignInButton, useAuth } from "@clerk/nextjs";
-import { Check, ChevronLeft, ChevronRight, Bookmark, FileQuestion, WandSparkles, List, Play, Code, FileQuestion as QuizIcon } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Bookmark, FileQuestion, WandSparkles, List, Play, Code, FileQuestion as QuizIcon, PenLine } from "lucide-react";
+import { FillBlank } from "@/app/components/fillblank";
 
 import "@/lib/visualizers";
 
@@ -434,6 +435,15 @@ export default function LessonPage() {
     return <Quiz quizData={quizData} onComplete={handleQuizComplete} />;
   };
 
+  const renderFillBlankPanel = (fillData: any) => {
+    if (!fillData) return null;
+    return (
+      <div className="h-full overflow-y-auto p-4">
+        <FillBlank data={fillData} onComplete={handleQuizComplete} />
+      </div>
+    );
+  };
+
   const renderContent = (isSublessonMode: boolean) => {
     const data = isSublessonMode ? activeSublessonData : lessonData;
     if (!data) return null;
@@ -493,6 +503,10 @@ export default function LessonPage() {
           )}
         </ResizablePanelGroup>
       );
+    }
+
+    if (type === "fill_blank") {
+      return renderFillBlankPanel(data.quizData);
     }
 
     return (
@@ -621,6 +635,8 @@ export default function LessonPage() {
                       >
                         {s.lessonType === "code" ? (
                           <Code size={14} className="mt-1 flex-shrink-0" />
+                        ) : s.lessonType === "fill_blank" ? (
+                          <PenLine size={14} className="mt-1 flex-shrink-0" />
                         ) : (
                           <QuizIcon size={14} className="mt-1 flex-shrink-0" />
                         )}
