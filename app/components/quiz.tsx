@@ -86,8 +86,13 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
     questions.forEach((q) => {
       const userAnswer = answers[q.id];
       if (Array.isArray(q.correctAnswer)) {
-        const userAnswers = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
-        if (JSON.stringify(userAnswers.sort()) === JSON.stringify(q.correctAnswer.sort())) {
+        const userAnswers = Array.isArray(userAnswer)
+          ? userAnswer
+          : [userAnswer];
+        if (
+          JSON.stringify(userAnswers.sort()) ===
+          JSON.stringify(q.correctAnswer.sort())
+        ) {
           correct++;
         }
       } else {
@@ -103,7 +108,10 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
     const userAnswer = answers[question.id];
     if (Array.isArray(question.correctAnswer)) {
       const userAnswers = Array.isArray(userAnswer) ? userAnswer : [];
-      return JSON.stringify(userAnswers.sort()) === JSON.stringify(question.correctAnswer.sort());
+      return (
+        JSON.stringify(userAnswers.sort()) ===
+        JSON.stringify(question.correctAnswer.sort())
+      );
     }
     return userAnswer === question.correctAnswer;
   };
@@ -159,7 +167,11 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
                   </p>
                   <p className="text-sm mt-1">
                     <span className="text-gray-600">Your answer: </span>
-                    <span className={isCorrect(q) ? "text-green-600" : "text-red-600"}>
+                    <span
+                      className={
+                        isCorrect(q) ? "text-green-600" : "text-red-600"
+                      }
+                    >
                       {Array.isArray(answers[q.id])
                         ? (answers[q.id] as string[]).join(", ")
                         : answers[q.id] || "No answer"}
@@ -190,7 +202,9 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
             setSubmitted(false);
             setAnswers({});
             setCurrentQuestion(0);
-            setTimeRemaining(quizData.timeLimit ? quizData.timeLimit * 60 : null);
+            setTimeRemaining(
+              quizData.timeLimit ? quizData.timeLimit * 60 : null,
+            );
           }}
           className="mt-6 px-6 py-2 bg-[#0995BC] text-white rounded-md hover:bg-[#0880A8] flex items-center gap-2"
         >
@@ -200,7 +214,7 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
       </div>
     );
   }
-
+  console.log("questions", questions);
   const question = questions[currentQuestion];
 
   return (

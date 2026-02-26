@@ -468,13 +468,13 @@ export default function LessonPage() {
               Quiz
             </button>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className={`flex-1 ${activeTab === "code" ? "overflow-hidden" : "overflow-y-auto"}`}>
             {activeTab === "code" ? (
               <ResizablePanelGroup orientation="vertical" className="h-full">
                 {renderCodePanel(sublessonCode, setSublessonCode, executeSublessonCode)}
               </ResizablePanelGroup>
             ) : (
-              <div className="h-full overflow-auto p-4">
+              <div className="p-4">
                 {renderQuizPanel(data.quizData)}
               </div>
             )}
@@ -495,7 +495,11 @@ export default function LessonPage() {
       );
     }
 
-    return renderQuizPanel(data.quizData);
+    return (
+      <div className="h-full overflow-y-auto p-4">
+        {renderQuizPanel(data.quizData)}
+      </div>
+    );
   };
 
   const renderLessonText = () => {
@@ -645,7 +649,7 @@ export default function LessonPage() {
           <ResizableHandle />
 
           <ResizablePanel minSize={30} className="p-2">
-            <div className="h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
+            <div className="h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden flex flex-col">
               {renderContent(hasSublessons && activeSublesson !== null)}
             </div>
           </ResizablePanel>

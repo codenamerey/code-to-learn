@@ -3,6 +3,10 @@ import { UnderscoreTabs } from "@/components/ui/underscoretabs";
 import { DocumentationTable, PropertyData } from "./documentationtable";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface Hint {
   id: string;
@@ -37,9 +41,14 @@ export function Lesson({
     {
       title: "Lesson",
       content: (
-        <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-          {lessonContent}
-        </ReactMarkdown>
+        <div className="markdown-content">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeRaw, rehypeKatex]}
+          >
+            {lessonContent}
+          </ReactMarkdown>
+        </div>
       ),
       value: "lesson",
       label: "Lesson",

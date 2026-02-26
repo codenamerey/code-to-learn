@@ -37,43 +37,33 @@ export function Output({
         ? "text-green-600 dark:text-green-400 data-[state=active]:border-green-500 data-[state=active]:text-green-600 hover:text-green-500"
         : "text-red-600 dark:text-red-400 data-[state=active]:border-red-500 data-[state=active]:text-red-600 hover:text-red-500",
       content: (
-        <div className="p-4">
-          <div className="flex items-start gap-3">
-            <div
-              className={`text-2xl ${test.passed ? "text-green-500" : "text-red-500"}`}
-            ></div>
-            <div className="flex-1">
-              <h3
-                className={`text-lg font-semibold mb-2 ${test.passed ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}`}
-              >
-                {test.name}
-              </h3>
-              <div
-                className={`p-3 rounded-lg ${test.passed ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}`}
-              >
-                <p
-                  className={`text-sm ${test.passed ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"}`}
-                >
-                  {test.message}
-                </p>
-              </div>
-              {test.expected && (
-                <div className="mt-3 text-sm">
-                  <div className="text-gray-600 dark:text-gray-400">
-                    <strong>Expected:</strong> {test.expected}
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-400">
-                    <strong>Actual:</strong> {test.actual}
-                  </div>
-                </div>
-              )}
-              {test.error && (
-                <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300 text-sm">
-                  <strong>Error:</strong> {test.error}
-                </div>
-              )}
-            </div>
+        <div className="p-4 font-mono text-sm">
+          <div className={`flex items-center gap-2 mb-3 ${test.passed ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            <span className="font-bold">{test.passed ? "✓" : "✕"}</span>
+            <span className="font-semibold">{test.name || test.title}</span>
           </div>
+          {!test.passed && (test.expected !== undefined || test.actual !== undefined) && (
+            <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 border-b border-gray-200 dark:border-gray-700">
+                <span className="text-green-700 dark:text-green-400 font-semibold text-xs uppercase tracking-wide">Expected</span>
+              </div>
+              <pre className="px-3 py-2 bg-green-50/50 dark:bg-green-900/10 text-green-800 dark:text-green-200 whitespace-pre-wrap break-all">{String(test.expected)}</pre>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border-t border-b border-gray-200 dark:border-gray-700">
+                <span className="text-red-700 dark:text-red-400 font-semibold text-xs uppercase tracking-wide">Received</span>
+              </div>
+              <pre className="px-3 py-2 bg-red-50/50 dark:bg-red-900/10 text-red-800 dark:text-red-200 whitespace-pre-wrap break-all">{test.actual === undefined || test.actual === "undefined" ? "(missing)" : String(test.actual)}</pre>
+            </div>
+          )}
+          {test.message && (
+            <div className={`px-3 py-2 rounded-lg text-xs ${test.passed ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300" : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400"}`}>
+              {test.message}
+            </div>
+          )}
+          {test.error && (
+            <div className="mt-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-xs">
+              <span className="font-semibold">Error: </span>{test.error}
+            </div>
+          )}
         </div>
       ),
     }));

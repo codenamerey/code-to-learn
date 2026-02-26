@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function transformQuizData(raw: any): any {
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) {
+    return {
+      questions: raw.map((q: any, idx: number) => ({
+        id: String(idx),
+        question: q.question,
+        type: "multiple_choice" as const,
+        options: q.options,
+        correctAnswer: q.options[q.correctIndex],
+        explanation: q.explanation,
+      })),
+      showExplanations: true,
+    };
+  }
+  return raw;
+}
+
 export const dynamic = "force-dynamic";
 
 type RouteContext = {
@@ -28,7 +46,15 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       },
     });
 
-    if (!lesson || !lesson.lessonContent) {
+    if (!lesson) {
+      return NextResponse.json(
+        { success: false, error: "Lesson not found" },
+        { status: 404 },
+      );
+    }
+
+    const hasSublessons = lesson.sublessons.length > 0;
+    if (!lesson.lessonContent && !hasSublessons) {
       return NextResponse.json(
         { success: false, error: "Lesson not found" },
         { status: 404 },
@@ -43,9 +69,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       lessonId: lesson.id,
       lessonIndex: lesson.index,
       lessonType,
-      lesson: content.lessonText,
-      documentationData: content.documentationData,
-      hints: content.hintsData,
+      lesson: content?.lessonText ?? "",
+      documentationData: content?.documentationData ?? [],
+      hints: content?.hintsData ?? [],
       sublessons: lesson.sublessons.map((s: any) => ({
         id: s.id,
         index: s.index,
@@ -61,11 +87,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         demoData: s.sublessonContent?.demoData || "",
         documentationData: s.sublessonContent?.documentationData || [],
         hints: s.sublessonContent?.hintsData || [],
-        quizData: s.sublessonContent?.quizData,
+        quizData: transformQuizData(s.sublessonContent?.quizData),
       })),
     };
 
-    if (lessonType === "code") {
+    if (content && lessonType === "code") {
       const defaultCode = content.defaultCode;
       const functionNameMatch = defaultCode.match(/function\s+(\w+)\s*\(/);
       const functionName = functionNameMatch ? functionNameMatch[1] : "main";
@@ -79,8 +105,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       response.visualizerConfig = content.visualizerConfig;
     }
 
-    if (lessonType === "quiz") {
-      response.quizData = content.quizData;
+    if (content && lessonType === "quiz") {
+      response.quizData = transformQuizData(content.quizData);
     }
 
     return NextResponse.json(response);
