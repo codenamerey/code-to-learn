@@ -97,10 +97,10 @@ model LessonContent {
   lessonId          Int    @unique
   lesson            Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   lessonText        String
-  defaultCode       String @default("")
-  abstractedCode    String @default("")
-  testRunner        String @default("")
-  demoData          String @default("")
+  defaultCode       Json   @default("{}")
+  abstractedCode    Json   @default("{}")
+  testRunner        Json   @default("{}")
+  demoData          Json   @default("{}")
   documentationData Json   @default("[]")
   hintsData         Json   @default("[]")
   visualizerConfig  Json?
@@ -132,10 +132,10 @@ model SublessonContent {
   sublessonId       Int       @unique
   sublesson         Sublesson @relation(fields: [sublessonId], references: [id], onDelete: Cascade)
   lessonText        String
-  defaultCode       String    @default("")
-  abstractedCode    String    @default("")
-  testRunner        String    @default("")
-  demoData          String    @default("")
+  defaultCode       Json      @default("{}")
+  abstractedCode    Json      @default("{}")
+  testRunner        Json      @default("{}")
+  demoData          Json      @default("{}")
   documentationData Json      @default("[]")
   hintsData         Json      @default("[]")
   visualizerConfig  Json?

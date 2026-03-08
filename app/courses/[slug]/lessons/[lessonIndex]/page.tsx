@@ -137,7 +137,12 @@ export default function LessonPage() {
 
   useEffect(() => {
     if (lessonData?.sublessons && lessonData.sublessons.length > 0) {
-      setActiveSublesson(lessonData.sublessons[0].id);
+      setActiveSublesson((prev) => {
+        if (prev !== null && lessonData.sublessons!.some((s) => s.id === prev)) {
+          return prev;
+        }
+        return lessonData.sublessons![0].id;
+      });
     }
   }, [lessonData?.sublessons]);
 
@@ -157,20 +162,6 @@ export default function LessonPage() {
     }
   }, [activeSublesson, lessonData?.sublessons]);
 
-  const handleLanguageChange = (lang: SupportedLanguage) => {
-    setLanguage(lang);
-    setCode(LANGUAGE_DEFAULT_CODE[lang]);
-    setOutput("");
-    setTests(null);
-  };
-
-  const handleSublessonLanguageChange = (lang: SupportedLanguage) => {
-    setLanguage(lang);
-    setSublessonCode(LANGUAGE_DEFAULT_CODE[lang]);
-    setOutput("");
-    setTests(null);
-  };
-
   const fetchCourseData = async () => {
     try {
       const response = await fetch(`/api/courses/${slug}`);
@@ -181,6 +172,64 @@ export default function LessonPage() {
     } catch (err) {
       console.error("Error fetching course:", err);
     }
+  };
+
+  const fetchLessonData = async (lang?: SupportedLanguage) => {
+    const isLangChange = !!lang;
+    try {
+      if (!isLangChange) setLoading(true);
+      const activeLang = lang ?? language;
+      const response = await fetch(
+        `/api/courses/${slug}/lessons/${lessonIndex}?language=${activeLang}`,
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch lesson data");
+      }
+
+      const data = await response.json();
+      setLessonData(data);
+
+      if (data.lessonType === "code") {
+        if (isLangChange) {
+          setCode(data.defaultCode ?? LANGUAGE_DEFAULT_CODE[lang!]);
+        } else if (!savedSolution && data.defaultCode) {
+          setCode(data.defaultCode);
+        }
+      }
+
+      if (isLangChange && data.sublessons?.length > 0) {
+        setActiveSublesson((prev) => {
+          const currentId = prev;
+          const match = data.sublessons.find((s: any) => s.id === currentId);
+          const target = match ?? data.sublessons[0];
+          if (target.defaultCode) setSublessonCode(target.defaultCode);
+          else setSublessonCode("");
+          return target.id;
+        });
+      }
+
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message);
+      console.error("Error fetching lesson:", err);
+    } finally {
+      if (!isLangChange) setLoading(false);
+    }
+  };
+
+  const handleLanguageChange = async (lang: SupportedLanguage) => {
+    setLanguage(lang);
+    setOutput("");
+    setTests(null);
+    await fetchLessonData(lang);
+  };
+
+  const handleSublessonLanguageChange = async (lang: SupportedLanguage) => {
+    setLanguage(lang);
+    setOutput("");
+    setTests(null);
+    await fetchLessonData(lang);
   };
 
   const fetchProgress = async () => {
@@ -223,31 +272,6 @@ export default function LessonPage() {
       }
     } catch (err) {
       console.error("Error checking bookmark:", err);
-    }
-  };
-
-  const fetchLessonData = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `/api/courses/${slug}/lessons/${lessonIndex}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch lesson data");
-      }
-
-      const data = await response.json();
-      setLessonData(data);
-      if (data.lessonType === "code" && !savedSolution && data.defaultCode) {
-        setCode(data.defaultCode);
-      }
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-      console.error("Error fetching lesson:", err);
-    } finally {
-      setLoading(false);
     }
   };
 

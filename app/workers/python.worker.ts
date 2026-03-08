@@ -92,14 +92,15 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
 
     let result: unknown = undefined;
 
-    if (demoData && functionName) {
+    if (demoData) {
       try {
         const callResult = await py.runPythonAsync(`
 import json as _json
 _demo_result = None
-${demoData}
-if callable(${functionName}):
-    _demo_result = ${functionName}(*demoData) if isinstance(demoData, (list, tuple)) else ${functionName}(demoData)
+try:
+    _demo_result = eval(compile("""${demoData.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')}""", "<demo>", "eval"))
+except SyntaxError:
+    exec(compile("""${demoData.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')}""", "<demo>", "exec"))
 try:
     _json.dumps(_demo_result)
 except:
@@ -120,8 +121,8 @@ _json.dumps(_demo_result)
         const testsJson = await py.runPythonAsync(`
 import json as _json
 _test_results = []
-if callable(run_tests):
-    _test_results = run_tests()
+if callable(test):
+    _test_results = test()
 _json.dumps(_test_results)
 `);
         tests = JSON.parse(String(testsJson));

@@ -19,15 +19,37 @@ function transformQuizData(raw: any): any {
   return raw;
 }
 
+function parseJsonCol(col: any): Record<string, string> | null {
+  if (!col) return null;
+  if (typeof col === "string") {
+    try { col = JSON.parse(col); } catch { return null; }
+  }
+  if (typeof col !== "object" || Array.isArray(col)) return null;
+  return col as Record<string, string>;
+}
+
+function pickLang(col: any, lang: string): string {
+  const obj = parseJsonCol(col);
+  if (!obj) return "";
+  return obj[lang] ?? "";
+}
+
+function availableLanguages(col: any): string[] {
+  const obj = parseJsonCol(col);
+  if (!obj) return [];
+  return Object.keys(obj).filter((k) => obj[k] !== "");
+}
+
 export const dynamic = "force-dynamic";
 
 type RouteContext = {
   params: Promise<{ slug: string; lessonIndex: string }>;
 };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { slug, lessonIndex } = await context.params;
+    const language = request.nextUrl.searchParams.get("language") ?? "javascript";
 
     const lesson = await prisma.lesson.findFirst({
       where: {
@@ -69,6 +91,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       lessonId: lesson.id,
       lessonIndex: lesson.index,
       lessonType,
+      language,
       lesson: content?.lessonText ?? "",
       documentationData: content?.documentationData ?? [],
       hints: content?.hintsData ?? [],
@@ -81,10 +104,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         videoEnd: s.videoEnd,
         lessonType: s.lessonType,
         lessonText: s.sublessonContent?.lessonText || "",
-        defaultCode: s.sublessonContent?.defaultCode || "",
-        abstractedCode: s.sublessonContent?.abstractedCode || "",
-        testRunner: s.sublessonContent?.testRunner || "",
-        demoData: s.sublessonContent?.demoData || "",
+        defaultCode: pickLang(s.sublessonContent?.defaultCode, language),
+        abstractedCode: pickLang(s.sublessonContent?.abstractedCode, language),
+        testRunner: pickLang(s.sublessonContent?.testRunner, language),
+        demoData: pickLang(s.sublessonContent?.demoData, language),
+        availableLanguages: availableLanguages(s.sublessonContent?.defaultCode),
         documentationData: s.sublessonContent?.documentationData || [],
         hints: s.sublessonContent?.hintsData || [],
         quizData: transformQuizData(s.sublessonContent?.quizData),
@@ -92,14 +116,15 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     };
 
     if (content && lessonType === "code") {
-      const defaultCode = content.defaultCode;
+      const defaultCode = pickLang(content.defaultCode, language);
       const functionNameMatch = defaultCode.match(/function\s+(\w+)\s*\(/);
       const functionName = functionNameMatch ? functionNameMatch[1] : "main";
 
-      response.defaultCode = content.defaultCode;
-      response.abstractedCode = content.abstractedCode;
-      response.testRunner = content.testRunner;
-      response.demoData = content.demoData;
+      response.defaultCode = defaultCode;
+      response.abstractedCode = pickLang(content.abstractedCode, language);
+      response.testRunner = pickLang(content.testRunner, language);
+      response.demoData = pickLang(content.demoData, language);
+      response.availableLanguages = availableLanguages(content.defaultCode);
       response.functionName = functionName;
       response.includeVisualizer = lesson.course.includeVisualizer;
       response.visualizerConfig = content.visualizerConfig;
