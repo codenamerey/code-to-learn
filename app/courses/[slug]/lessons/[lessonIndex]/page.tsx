@@ -19,6 +19,13 @@ import {
 import { SignedIn, SignedOut, SignInButton, useAuth } from "@clerk/nextjs";
 import { Check, ChevronLeft, ChevronRight, Bookmark, FileQuestion, WandSparkles, List, Play, Code, FileQuestion as QuizIcon, PenLine } from "lucide-react";
 import { FillBlank } from "@/app/components/fillblank";
+import type { SupportedLanguage } from "@/lib/execution";
+
+const LANGUAGE_DEFAULT_CODE: Record<SupportedLanguage, string> = {
+  javascript: "function main(...args) {\n  \n}\n",
+  typescript: "function main(...args: any[]): any {\n  \n}\n",
+  python: "def main(*args):\n    pass\n",
+};
 
 import "@/lib/visualizers";
 
@@ -107,6 +114,7 @@ export default function LessonPage() {
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [activeSublesson, setActiveSublesson] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "quiz">("code");
+  const [language, setLanguage] = useState<SupportedLanguage>("javascript");
 
   useEffect(() => {
     if (slug) {
@@ -148,6 +156,20 @@ export default function LessonPage() {
       }
     }
   }, [activeSublesson, lessonData?.sublessons]);
+
+  const handleLanguageChange = (lang: SupportedLanguage) => {
+    setLanguage(lang);
+    setCode(LANGUAGE_DEFAULT_CODE[lang]);
+    setOutput("");
+    setTests(null);
+  };
+
+  const handleSublessonLanguageChange = (lang: SupportedLanguage) => {
+    setLanguage(lang);
+    setSublessonCode(LANGUAGE_DEFAULT_CODE[lang]);
+    setOutput("");
+    setTests(null);
+  };
 
   const fetchCourseData = async () => {
     try {
@@ -229,39 +251,34 @@ export default function LessonPage() {
     }
   };
 
-  const executeCode = async (codeToRun: string, abstractedCode?: string, testRunner?: string, demoData?: string) => {
+  const runCode = async (
+    codeToRun: string,
+    abstractedCode?: string,
+    testRunner?: string,
+    demoData?: string,
+    functionName?: string,
+  ) => {
     setIsExecuting(true);
+    setOutput("");
     try {
-      const response = await fetch("/api/execute-code", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code: codeToRun,
-          abstractedCode,
-          language: "javascript",
-          functionName: "main",
-          testRunner,
-          demoData,
-        }),
-      });
+      const { executeCode } = await import("@/lib/execution");
+      const result = await executeCode(
+        language,
+        codeToRun,
+        abstractedCode ?? "",
+        testRunner ?? "",
+        demoData ?? "",
+        functionName ?? "main",
+        (statusMsg: string) => setOutput(statusMsg),
+      );
 
-      const data = await response.json();
-      console.log("API Response:", data);
-
-      if (data.success) {
-        setOutput(data.output);
-        if (data.result) {
-          setVisualizerData(data.result);
-        }
-        setTests(data.tests);
-      } else {
-        setOutput(data.output || `API Error: ${data.error}`);
-        setVisualizerData(null);
+      setOutput(result.output);
+      if (result.result != null) {
+        setVisualizerData(result.result as any);
       }
-    } catch (error) {
-      setOutput(`Network Error: ${(error as Error).message}`);
+      setTests(result.tests ?? null);
+    } catch (err) {
+      setOutput(`Error: ${(err as Error).message}`);
       setVisualizerData(null);
     }
     setIsExecuting(false);
@@ -269,14 +286,14 @@ export default function LessonPage() {
 
   const executeLessonCode = () => {
     if (!lessonData) return;
-    executeCode(code, lessonData.abstractedCode, lessonData.testRunner, lessonData.demoData);
+    runCode(code, lessonData.abstractedCode, lessonData.testRunner, lessonData.demoData, lessonData.functionName);
   };
 
   const executeSublessonCode = () => {
     if (!lessonData?.sublessons) return;
     const sublesson = lessonData.sublessons.find(s => s.id === activeSublesson);
     if (!sublesson) return;
-    executeCode(sublessonCode, sublesson.abstractedCode, sublesson.testRunner, sublesson.demoData);
+    runCode(sublessonCode, sublesson.abstractedCode, sublesson.testRunner, sublesson.demoData);
   };
 
   const generateQuiz = async () => {
@@ -396,7 +413,12 @@ export default function LessonPage() {
     );
   };
 
-  const renderCodePanel = (codeValue: string, setCodeValue: (c: string) => void, onExecute: () => void) => (
+  const renderCodePanel = (
+    codeValue: string,
+    setCodeValue: (c: string) => void,
+    onExecute: () => void,
+    onLangChange: (lang: SupportedLanguage) => void,
+  ) => (
     <>
       <ResizablePanel className="p-2 relative bg-white dark:bg-gray-800 rounded-xl">
         <CodeEditor
@@ -404,6 +426,8 @@ export default function LessonPage() {
           isExecuting={isExecuting}
           code={codeValue}
           setCode={setCodeValue}
+          language={language}
+          setLanguage={onLangChange}
         />
       </ResizablePanel>
       <ResizableHandle />
@@ -481,7 +505,7 @@ export default function LessonPage() {
           <div className={`flex-1 ${activeTab === "code" ? "overflow-hidden" : "overflow-y-auto"}`}>
             {activeTab === "code" ? (
               <ResizablePanelGroup orientation="vertical" className="h-full">
-                {renderCodePanel(sublessonCode, setSublessonCode, executeSublessonCode)}
+                {renderCodePanel(sublessonCode, setSublessonCode, executeSublessonCode, handleSublessonLanguageChange)}
               </ResizablePanelGroup>
             ) : (
               <div className="p-4">
@@ -499,7 +523,8 @@ export default function LessonPage() {
           {renderCodePanel(
             isSublessonMode ? sublessonCode : code,
             isSublessonMode ? setSublessonCode : setCode,
-            isSublessonMode ? executeSublessonCode : executeLessonCode
+            isSublessonMode ? executeSublessonCode : executeLessonCode,
+            isSublessonMode ? handleSublessonLanguageChange : handleLanguageChange,
           )}
         </ResizablePanelGroup>
       );
