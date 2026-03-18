@@ -1,16 +1,48 @@
 "use client";
 
-import { useClerk, SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
 
 export default function NavBar({ title }: { title: string }) {
-  const { isSignedIn } = useClerk();
+  const [clerkComponents, setClerkComponents] = useState<any>(null);
+  const [isClerkAvailable, setIsClerkAvailable] = useState(false);
+  
+  useEffect(() => {
+    const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    const hasValidKey = !!clerkPubKey && clerkPubKey !== "pk_test_placeholder";
+    
+    if (hasValidKey) {
+      // Dynamically import Clerk only when available
+      import("@clerk/nextjs").then((clerk) => {
+        setClerkComponents(clerk);
+        setIsClerkAvailable(true);
+      }).catch(() => {
+        setIsClerkAvailable(false);
+      });
+    } else {
+      setIsClerkAvailable(false);
+    }
+  }, []);
 
-  if (isSignedIn === undefined) {
+  if (!isClerkAvailable || !clerkComponents) {
     return (
       <div className="flex h-[8vh] border items-center justify-between p-4 w-full">
         <h1 className="text-2xl font-bold">{title}</h1>
         <div className="text-sm text-gray-500">
           Auth not configured
+        </div>
+      </div>
+    );
+  }
+
+  const { useClerk, SignedIn, SignedOut, SignInButton, UserButton } = clerkComponents;
+  const clerk = useClerk();
+  
+  if (!clerk || clerk.isSignedIn === undefined) {
+    return (
+      <div className="flex h-[8vh] border items-center justify-between p-4 w-full">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <div className="text-sm text-gray-500">
+          Loading...
         </div>
       </div>
     );

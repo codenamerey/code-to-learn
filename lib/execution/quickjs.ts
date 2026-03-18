@@ -120,28 +120,21 @@ export async function runJS(
     let result: unknown = undefined;
 
     if (demoData) {
-      let demoScript = "";
+      let demoScript = demoData;
       if (isTypeScript) {
         try {
           demoScript = transform(demoData, { transforms: ["typescript"] }).code;
         } catch {
           demoScript = demoData;
         }
-      } else {
-        demoScript = demoData;
       }
-      const demoResult = context.evalCode(`
-        (() => {
-          ${demoScript}
-          if (typeof ${functionName} === 'function') {
-            return ${functionName}(...demoData);
-          }
-          return undefined;
-        })()
-      `, "demo.js");
+      const demoResult = context.evalCode(demoScript, "demo.js");
       if (!demoResult.error) {
-        result = context.dump(demoResult.value);
+        const val = context.dump(demoResult.value);
         demoResult.value.dispose();
+        if (val !== undefined && val !== null) {
+          result = val;
+        }
       } else {
         const err = context.dump(demoResult.error);
         demoResult.error.dispose();

@@ -5,6 +5,9 @@ import CategoriesSection from "@/components/CategoriesSection";
 import { useState, useEffect } from "react";
 import CoursesSection from "@/components/CoursesSection";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function Dashboard() {
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);

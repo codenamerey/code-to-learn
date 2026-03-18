@@ -1,15 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuth } from "@clerk/nextjs/server";
 
 export const dynamic = "force-dynamic";
 
+// Dynamically import and handle Clerk auth
+async function getClerkAuth() {
+  try {
+    // Check if Clerk is available
+    const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    if (!clerkPubKey || clerkPubKey === "pk_test_placeholder") {
+      return { userId: null, error: "Auth not configured" };
+    }
+    
+    // Dynamic import to avoid build issues
+    const { auth } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
+    return { userId, error: null };
+  } catch (error) {
+    console.error("Clerk auth error:", error);
+    return { userId: null, error: "Auth error" };
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = getAuth(request);
+    const { userId, error } = await getClerkAuth();
+    
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: error || "Unauthorized" },
         { status: 401 },
       );
     }

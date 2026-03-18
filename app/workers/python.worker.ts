@@ -49,7 +49,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   }
 
   if (msg.type === "run") {
-    const { id, code, abstractedCode, testRunner, demoData, functionName } = msg;
+    const { id, code, abstractedCode, testRunner, demoData } = msg;
 
     try {
       await ensureInit();
@@ -90,26 +90,12 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       return;
     }
 
-    let result: unknown = undefined;
-
     if (demoData) {
       try {
-        const callResult = await py.runPythonAsync(`
-import json as _json
-_demo_result = None
-try:
-    _demo_result = eval(compile("""${demoData.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')}""", "<demo>", "eval"))
-except SyntaxError:
-    exec(compile("""${demoData.replace(/\\/g, "\\\\").replace(/"""/g, '\\"\\"\\"')}""", "<demo>", "exec"))
-try:
-    _json.dumps(_demo_result)
-except:
-    _demo_result = str(_demo_result)
-_json.dumps(_demo_result)
-`);
-        result = JSON.parse(String(callResult));
+        py.globals.set("_demo_src", demoData);
+        await py.runPythonAsync(`exec(_demo_src)`);
       } catch {
-        result = undefined;
+        // demo errors are non-fatal; output already captured via stderr
       }
     }
 
@@ -121,9 +107,13 @@ _json.dumps(_demo_result)
         const testsJson = await py.runPythonAsync(`
 import json as _json
 _test_results = []
-if callable(test):
+if "test" in dir() and callable(test):
     _test_results = test()
-_json.dumps(_test_results)
+_json.dumps([
+    {k: (v if not isinstance(v, bool) else bool(v)) for k, v in r.items()}
+    if isinstance(r, dict) else r
+    for r in _test_results
+])
 `);
         tests = JSON.parse(String(testsJson));
       } catch (err) {
@@ -138,7 +128,7 @@ _json.dumps(_test_results)
       success: true,
       output: allOutput || "Code executed successfully",
       tests,
-      result,
+      result: undefined,
     });
   }
 };

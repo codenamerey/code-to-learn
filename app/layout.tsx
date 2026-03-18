@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Overpass } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/theme-provider";
-import { ClerkProvider } from "@clerk/nextjs";
+import ClerkWrapper from "@/components/ClerkWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,31 +32,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  if (!clerkPubKey || clerkPubKey === "pk_test_placeholder") {
-    return (
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} ${overpass.variable} antialiased`}
-        >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={true}
-            disableTransitionOnChange={false}
-          >
-            {children}
-          </ThemeProvider>
-        </body>
-      </html>
-    );
-  }
-
   return (
-    <ClerkProvider publishableKey={clerkPubKey}>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} ${overpass.variable} antialiased`}
-        >
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${overpass.variable} antialiased`}
+      >
+        <ClerkWrapper publishableKey={clerkPubKey}>
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
@@ -65,8 +46,8 @@ export default function RootLayout({
           >
             {children}
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkWrapper>
+      </body>
+    </html>
   );
 }

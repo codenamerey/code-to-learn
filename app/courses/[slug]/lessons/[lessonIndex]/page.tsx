@@ -98,6 +98,11 @@ export default function LessonPage() {
   const slug = params.slug as string;
   const lessonIndex = parseInt(params.lessonIndex as string, 10);
 
+  // Check if we're using placeholder keys
+  const isPlaceholderMode = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY === "pk_test_placeholder";
+  const effectiveIsSignedIn = isPlaceholderMode ? true : isSignedIn;
+  const effectiveIsLoaded = isPlaceholderMode ? true : isLoaded;
+
   const [lessonData, setLessonData] = useState<LessonData | null>(null);
   const [courseData, setCourseData] = useState<CourseData | null>(null);
   const [code, setCode] = useState("");
@@ -129,11 +134,11 @@ export default function LessonPage() {
   }, [slug, lessonIndex]);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn && courseData) {
+    if (effectiveIsLoaded && effectiveIsSignedIn && courseData) {
       fetchProgress();
       checkBookmark();
     }
-  }, [isLoaded, isSignedIn, courseData]);
+  }, [effectiveIsLoaded, effectiveIsSignedIn, courseData]);
 
   useEffect(() => {
     if (lessonData?.sublessons && lessonData.sublessons.length > 0) {
@@ -422,7 +427,7 @@ export default function LessonPage() {
 
   const renderVideo = (videoUrl?: string, videoStart?: number, videoEnd?: number, title?: string) => {
     if (videoStart === undefined || videoStart === null) return null;
-    const videoId = videoUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1] || "8ssjKR7nNck";
+    const videoId = videoUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1] || "Ao41FrJFgvQ";
     return (
       <div className="mb-4" style={{ position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden" }}>
         <iframe
@@ -621,36 +626,38 @@ export default function LessonPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <SignedIn>
-            <button
-              onClick={toggleBookmark}
-              className={`p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                isBookmarked ? "text-yellow-500" : ""
-              }`}
-              title={isBookmarked ? "Remove bookmark" : "Add bookmark"}
-            >
-              <Bookmark size={20} fill={isBookmarked ? "currentColor" : "none"} />
-            </button>
-            <button
-              onClick={markComplete}
-              disabled={isCompleted}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                isCompleted
-                  ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                  : "bg-[#0995BC] text-white hover:bg-[#0880A8]"
-              }`}
-            >
-              <Check size={16} />
-              {isCompleted ? "Completed" : "Mark Complete"}
-            </button>
-          </SignedIn>
-          <SignedOut>
+          {/* Show signed in content for placeholder mode or actual signed in users */}
+          {(isPlaceholderMode || effectiveIsSignedIn) ? (
+            <>
+              <button
+                onClick={toggleBookmark}
+                className={`p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  isBookmarked ? "text-yellow-500" : ""
+                }`}
+                title={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+              >
+                <Bookmark size={20} fill={isBookmarked ? "currentColor" : "none"} />
+              </button>
+              <button
+                onClick={markComplete}
+                disabled={isCompleted}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  isCompleted
+                    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                    : "bg-[#0995BC] text-white hover:bg-[#0880A8]"
+                }`}
+              >
+                <Check size={16} />
+                {isCompleted ? "Completed" : "Mark Complete"}
+              </button>
+            </>
+          ) : (
             <SignInButton mode="modal">
               <button className="px-3 py-1.5 bg-[#0995BC] text-white rounded-md text-sm hover:bg-[#0880A8]">
                 Sign in to track progress
               </button>
             </SignInButton>
-          </SignedOut>
+          )}
         </div>
       </header>
 

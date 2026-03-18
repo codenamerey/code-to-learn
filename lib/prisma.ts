@@ -11,11 +11,7 @@ function createPrismaClient() {
   const pool =
     globalForPrisma.pool ||
     new Pool({
-      host: "localhost",
-      port: 5432,
-      database: "code-to-learn",
-      user: "postgres",
-      password: "password",
+      connectionString: process.env.DATABASE_URL,
     });
   const adapter = new PrismaPg(pool);
   return { prisma: new PrismaClient({ adapter }), pool };
