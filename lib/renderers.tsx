@@ -1,5 +1,6 @@
 // Legacy renderers - now enhanced with Observable Plot integration
 import { VisualizerRegistry } from "./visualizers/registry";
+import { BarChart2 } from "lucide-react";
 
 // Import all visualizers to register them
 import "./visualizers";
@@ -181,7 +182,7 @@ export const barChartRenderer = (data: number[] | null) => {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📊</div>
+          <BarChart2 className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data for bar chart</div>
         </div>
       </div>

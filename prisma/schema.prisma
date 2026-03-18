@@ -66,6 +66,9 @@ model Course {
   learnCount        Int       @default(0)
   lessonCount       Int
   includeVisualizer Boolean   @default(false)
+  status            String    @default("published")
+  createdBy         String?
+  updatedBy         String?
   categoryId        Int
   category          Category  @relation(fields: [categoryId], references: [id])
   lessons           Lesson[]
@@ -80,6 +83,9 @@ model Lesson {
   id            Int           @id @default(autoincrement())
   index         Int
   title         String
+  status        String        @default("published")
+  createdBy     String?
+  updatedBy     String?
   courseId      Int
   course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessonType    String        @default("code")
@@ -87,6 +93,7 @@ model Lesson {
   sublessons    Sublesson[]
   progress      CourseProgress[]
   createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@unique([courseId, index])
   @@map("lessons")
@@ -117,11 +124,15 @@ model Sublesson {
   videoStart      Int              @default(0)
   videoEnd        Int?
   lessonType      String           @default("quiz")
+  status          String           @default("published")
+  createdBy       String?
+  updatedBy       String?
   lessonId        Int
   lesson          Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   sublessonContent SublessonContent?
   progress        SublessonProgress[]
   createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@unique([lessonId, index])
   @@map("sublessons")

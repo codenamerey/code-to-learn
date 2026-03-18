@@ -1,6 +1,7 @@
 import { VisualizerRegistry } from "../registry";
 import { ObservablePlotRenderer } from "../ObservablePlotRenderer";
 import * as Plot from "@observablehq/plot";
+import { BarChart2, TrendingUp, TrendingDown } from "lucide-react";
 
 // Bar chart for numerical arrays
 const barChartPlotRenderer = (data: number[]) => {
@@ -8,7 +9,7 @@ const barChartPlotRenderer = (data: number[]) => {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📊</div>
+          <BarChart2 className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data for bar chart</div>
         </div>
       </div>
@@ -81,7 +82,7 @@ const scatterPlotRenderer = (
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📈</div>
+          <TrendingUp className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data for scatter plot</div>
         </div>
       </div>
@@ -143,7 +144,7 @@ const lineChartRenderer = (
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📉</div>
+          <TrendingDown className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data for line chart</div>
         </div>
       </div>

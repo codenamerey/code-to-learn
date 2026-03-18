@@ -11,7 +11,15 @@ interface Hint {
   content: string;
 }
 
-export function Hints({ hints }: { hints: Hint[] }) {
+export function Hints({ hints }: { hints: Hint[] | undefined }) {
+  if (!hints || hints.length === 0) {
+    return (
+      <div className="text-muted-foreground text-sm p-4 border rounded-lg">
+        No hints available for this lesson.
+      </div>
+    );
+  }
+
   return (
     <Accordion type="single" collapsible className="w-full">
       {hints.map((hint) => (

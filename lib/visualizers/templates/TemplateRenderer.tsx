@@ -7,6 +7,7 @@ import { ChartTemplate } from "./ChartTemplate";
 import { GridTemplate } from "./GridTemplate";
 import { TableTemplate } from "./TableTemplate";
 import { isPrimitive, wrapPrimitive, detectBestTemplate } from "./utils";
+import { Search, Construction, HelpCircle } from "lucide-react";
 
 interface TemplateRendererProps {
   data: any;
@@ -18,7 +19,7 @@ export function TemplateRenderer({ data, config }: TemplateRendererProps) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">🔍</div>
+          <Search className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data available</div>
         </div>
       </div>
@@ -68,7 +69,7 @@ export function TemplateRenderer({ data, config }: TemplateRendererProps) {
       return (
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center">
-            <div className="text-4xl mb-2">🚧</div>
+            <Construction className="h-12 w-12 mb-2 mx-auto text-gray-400" />
             <div>Template "{config.template}" coming soon!</div>
             <div className="text-xs mt-2">Using table view as fallback</div>
             <div className="mt-4">
@@ -82,7 +83,7 @@ export function TemplateRenderer({ data, config }: TemplateRendererProps) {
       return (
         <div className="flex items-center justify-center h-full text-gray-500">
           <div className="text-center">
-            <div className="text-4xl mb-2">❓</div>
+            <HelpCircle className="h-12 w-12 mb-2 mx-auto text-gray-400" />
             <div>Unknown template: {config.template}</div>
           </div>
         </div>

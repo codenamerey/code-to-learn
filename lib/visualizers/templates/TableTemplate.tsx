@@ -1,6 +1,7 @@
 "use client";
 
 import { VisualizerConfig } from "./types";
+import { FileSpreadsheet } from "lucide-react";
 
 interface TableTemplateProps {
   data: any;
@@ -12,7 +13,7 @@ export function TableTemplate({ data, config }: TableTemplateProps) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📋</div>
+          <FileSpreadsheet className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No table data available</div>
         </div>
       </div>
@@ -30,7 +31,7 @@ export function TableTemplate({ data, config }: TableTemplateProps) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📋</div>
+          <FileSpreadsheet className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data to display</div>
         </div>
       </div>

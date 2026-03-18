@@ -1,6 +1,7 @@
 import { VisualizerRegistry } from "../registry";
 import { ObservablePlotRenderer } from "../ObservablePlotRenderer";
 import * as Plot from "@observablehq/plot";
+import { FileSpreadsheet } from "lucide-react";
 
 interface AtomData {
   uuid: string;
@@ -316,7 +317,7 @@ const moleculeTableRenderer = (data: MoleculeData) => {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📋</div>
+          <FileSpreadsheet className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No data for table</div>
         </div>
       </div>

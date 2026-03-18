@@ -5,6 +5,7 @@ import {
   VisualizerRegistry,
   VisualizerConfig,
 } from "@/lib/visualizers/registry";
+import { Search } from "lucide-react";
 
 // Import visualizers to ensure registration
 import "@/lib/visualizers/chemistry/lewis-structures";
@@ -63,7 +64,7 @@ const DynamicVisualizer = <TData,>({
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">🔍</div>
+          <Search className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No compatible visualizer found</div>
         </div>
       </div>

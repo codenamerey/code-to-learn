@@ -2,6 +2,7 @@
 
 import { VisualizerConfig } from "./types";
 import { normalizeArrayData } from "./utils";
+import { BarChart2 } from "lucide-react";
 
 interface ArrayTemplateProps {
   data: any;
@@ -13,7 +14,7 @@ export function ArrayTemplate({ data, config }: ArrayTemplateProps) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">
-          <div className="text-4xl mb-2">📊</div>
+          <BarChart2 className="h-12 w-12 mb-2 mx-auto text-gray-400" />
           <div>No array data available</div>
         </div>
       </div>
