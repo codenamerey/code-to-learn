@@ -1,24 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-function transformQuizData(raw: any): any {
-  if (!raw) return undefined;
-  if (Array.isArray(raw)) {
-    return {
-      questions: raw.map((q: any, idx: number) => ({
-        id: String(idx),
-        question: q.question,
-        type: "multiple_choice" as const,
-        options: q.options,
-        correctAnswer: q.options[q.correctIndex],
-        explanation: q.explanation,
-      })),
-      showExplanations: true,
-    };
-  }
-  return raw;
-}
-
 function parseJsonCol(col: any): Record<string, string> | null {
   if (!col) return null;
   if (typeof col === "string") {
@@ -38,6 +20,32 @@ function availableLanguages(col: any): string[] {
   const obj = parseJsonCol(col);
   if (!obj) return [];
   return Object.keys(obj).filter((k) => obj[k] !== "");
+}
+
+// Fetch exercises from new database schema
+async function fetchExercises(lessonId?: number, sublessonId?: number) {
+  const [quizzes, codeCharlenges, fillInBlanks] = await Promise.all([
+    prisma.quiz.findMany({
+      where: lessonId ? { lessonId } : { sublessonId },
+      include: { questions: true },
+      orderBy: { index: 'asc' }
+    }),
+    prisma.codeChallenge.findMany({
+      where: lessonId ? { lessonId } : { sublessonId },
+      orderBy: { index: 'asc' }
+    }),
+    prisma.fillInBlank.findMany({
+      where: lessonId ? { lessonId } : { sublessonId },
+      include: { blanks: true },
+      orderBy: { index: 'asc' }
+    })
+  ]);
+
+  return {
+    quizzes,
+    codeCharlenges,
+    fillInBlanks
+  };
 }
 
 export const dynamic = "force-dynamic";
@@ -86,6 +94,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const content = lesson.lessonContent;
     const lessonType = lesson.lessonType || "code";
 
+    // Fetch exercises from new database schema
+    const lessonExercises = await fetchExercises(lesson.id);
+
     const response: any = {
       success: true,
       lessonId: lesson.id,
@@ -95,23 +106,27 @@ export async function GET(request: NextRequest, context: RouteContext) {
       lesson: content?.lessonText ?? "",
       documentationData: content?.documentationData ?? [],
       hints: content?.hintsData ?? [],
-      sublessons: lesson.sublessons.map((s: any) => ({
-        id: s.id,
-        index: s.index,
-        title: s.title,
-        videoUrl: s.videoUrl,
-        videoStart: s.videoStart,
-        videoEnd: s.videoEnd,
-        lessonType: s.lessonType,
-        lessonText: s.sublessonContent?.lessonText || "",
-        defaultCode: pickLang(s.sublessonContent?.defaultCode, language),
-        abstractedCode: pickLang(s.sublessonContent?.abstractedCode, language),
-        testRunner: pickLang(s.sublessonContent?.testRunner, language),
-        demoData: pickLang(s.sublessonContent?.demoData, language),
-        availableLanguages: availableLanguages(s.sublessonContent?.defaultCode),
-        documentationData: s.sublessonContent?.documentationData || [],
-        hints: s.sublessonContent?.hintsData || [],
-        quizData: transformQuizData(s.sublessonContent?.quizData),
+      exercises: lessonExercises,
+      sublessons: await Promise.all(lesson.sublessons.map(async (s: any) => {
+        const sublessonExercises = await fetchExercises(undefined, s.id);
+        return {
+          id: s.id,
+          index: s.index,
+          title: s.title,
+          videoUrl: s.videoUrl,
+          videoStart: s.videoStart,
+          videoEnd: s.videoEnd,
+          lessonType: s.lessonType,
+          lessonText: s.sublessonContent?.lessonText || "",
+          defaultCode: pickLang(s.sublessonContent?.defaultCode, language),
+          abstractedCode: pickLang(s.sublessonContent?.abstractedCode, language),
+          testRunner: pickLang(s.sublessonContent?.testRunner, language),
+          demoData: pickLang(s.sublessonContent?.demoData, language),
+          availableLanguages: availableLanguages(s.sublessonContent?.defaultCode),
+          documentationData: s.sublessonContent?.documentationData || [],
+          hints: s.sublessonContent?.hintsData || [],
+          exercises: sublessonExercises,
+        };
       })),
     };
 
@@ -128,10 +143,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
       response.functionName = functionName;
       response.includeVisualizer = lesson.course.includeVisualizer;
       response.visualizerConfig = content.visualizerConfig;
-    }
-
-    if (content && lessonType === "quiz") {
-      response.quizData = transformQuizData(content.quizData);
     }
 
     return NextResponse.json(response);

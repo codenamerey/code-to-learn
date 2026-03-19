@@ -1,3 +1,72 @@
+// Database models for exercises
+export interface DbQuiz {
+  id: number;
+  title: string;
+  description?: string;
+  passingScore: number;
+  timeLimit?: number;
+  showExplanations: boolean;
+  index: number;
+  lessonId?: number;
+  sublessonId?: number;
+  questions: DbQuizQuestion[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DbQuizQuestion {
+  id: number;
+  quizId: number;
+  question: string;
+  type: string;
+  options?: any;
+  correctAnswer: string;
+  explanation?: string;
+  index: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DbCodeChallenge {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: string;
+  starterCode: any;
+  solution: any;
+  tests: any;
+  hints: any;
+  index: number;
+  lessonId?: number;
+  sublessonId?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DbFillInBlank {
+  id: number;
+  title: string;
+  text: string;
+  explanation?: string;
+  index: number;
+  lessonId?: number;
+  sublessonId?: number;
+  blanks: DbFillInBlankAnswer[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DbFillInBlankAnswer {
+  id: number;
+  fillInBlankId: number;
+  blankId: string;
+  correctAnswer: string;
+  alternatives: any;
+  caseSensitive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface QuizQuestion {
   id: string;
   question: string;
@@ -12,6 +81,43 @@ export interface QuizData {
   passingScore?: number;
   timeLimit?: number;
   showExplanations?: boolean;
+}
+
+// Enhanced exercise system types
+export interface CodeChallenge {
+  id: string;
+  title: string;
+  description: string;
+  starterCode: Record<string, string>; // language -> code
+  solution: Record<string, string>; // language -> solution
+  tests: Record<string, string>; // language -> test code
+  hints?: string[];
+  difficulty: "easy" | "medium" | "hard";
+}
+
+export interface FillInBlank {
+  id: string;
+  title: string;
+  text: string; // Text with ___BLANK_1___, ___BLANK_2___ placeholders
+  blanks: {
+    id: string;
+    correctAnswer: string;
+    alternatives?: string[]; // Alternative correct answers
+    caseSensitive?: boolean;
+  }[];
+  explanation?: string;
+}
+
+// Client-side exercise interface (for form state)
+export interface Exercise {
+  id: string;
+  type: "quiz" | "code_challenge" | "fill_in_blank";
+  title: string;
+  data: QuizData | CodeChallenge | FillInBlank;
+}
+
+export interface ExerciseContainer {
+  exercises: Exercise[];
 }
 
 export interface Hint {
@@ -107,7 +213,8 @@ export interface LessonFormData {
   documentationData?: DocClass[];
   hintsData?: Hint[];
   visualizerConfig?: VisualizerConfig;
-  quizData?: QuizData;
+  quizData?: QuizData; // Legacy support
+  exerciseData?: ExerciseContainer; // New exercise system
   videoUrl?: string;
   videoStart?: number;
   videoEnd?: number;

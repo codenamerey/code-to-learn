@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Editor } from '@monaco-editor/react'
 import { EditorLayout } from './EditorLayout'
 import { ContentPreview } from './ContentPreview'
@@ -12,8 +12,8 @@ import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Trash2, Save, FileText, Code, Lightbulb, BookOpen, Video, List, Square, Circle, Triangle } from 'lucide-react'
-import type { FullLesson, LessonFormData, Hint, DocClass, DocMethod, DocProperty } from '@/types/educator'
+import { Plus, Trash2, Save, FileText, Code, Lightbulb, BookOpen, Video, List, Square, Circle, Triangle, Puzzle, Brain, Edit3 } from 'lucide-react'
+import type { FullLesson, LessonFormData, Hint, DocClass, DocMethod, DocProperty, Exercise, ExerciseContainer, QuizData, CodeChallenge, FillInBlank, QuizQuestion, DbQuiz, DbCodeChallenge, DbFillInBlank } from '@/types/educator'
 
 interface LessonEditorProps {
   lesson: FullLesson
@@ -22,28 +22,52 @@ interface LessonEditorProps {
 }
 
 export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
-  const [formData, setFormData] = useState<LessonFormData>(() => ({
-    title: lesson.title,
-    lessonType: lesson.lessonType,
-    lessonText: lesson.lessonContent?.lessonText || '',
-    defaultCode: lesson.lessonContent?.defaultCode || {},
-    abstractedCode: lesson.lessonContent?.abstractedCode || {},
-    testRunner: lesson.lessonContent?.testRunner || {},
-    demoData: lesson.lessonContent?.demoData || {},
-    documentationData: Array.isArray(lesson.lessonContent?.documentationData) ? lesson.lessonContent?.documentationData : [],
-    hintsData: Array.isArray(lesson.lessonContent?.hintsData) ? lesson.lessonContent?.hintsData : [],
-    visualizerConfig: lesson.lessonContent?.visualizerConfig || undefined,
-    quizData: lesson.lessonContent?.quizData || undefined,
-    videoUrl: lesson.lessonContent?.videoUrl || '',
-    videoStart: lesson.lessonContent?.videoStart || 0,
-    videoEnd: lesson.lessonContent?.videoEnd || 0,
-  }))
+  const [formData, setFormData] = useState<LessonFormData>(() => {
+    // Check if quizData contains legacy quiz or new exercise system
+    const quizData = lesson.lessonContent?.quizData
+    let legacyQuizData = null
+    let exerciseData = { exercises: [] }
+
+    if (quizData) {
+      // If it has a 'questions' array directly, it's legacy quiz data
+      if (quizData.questions && Array.isArray(quizData.questions)) {
+        legacyQuizData = quizData
+      } else if (quizData.exercises && Array.isArray(quizData.exercises)) {
+        // If it has 'exercises' array, it's new exercise system
+        exerciseData = quizData
+      }
+    }
+
+    return {
+      title: lesson.title,
+      lessonType: lesson.lessonType,
+      lessonText: lesson.lessonContent?.lessonText || '',
+      defaultCode: lesson.lessonContent?.defaultCode || {},
+      abstractedCode: lesson.lessonContent?.abstractedCode || {},
+      testRunner: lesson.lessonContent?.testRunner || {},
+      demoData: lesson.lessonContent?.demoData || {},
+      documentationData: Array.isArray(lesson.lessonContent?.documentationData) ? lesson.lessonContent?.documentationData : [],
+      hintsData: Array.isArray(lesson.lessonContent?.hintsData) ? lesson.lessonContent?.hintsData : [],
+      visualizerConfig: lesson.lessonContent?.visualizerConfig || undefined,
+      quizData: legacyQuizData,
+      exerciseData: exerciseData,
+      videoUrl: lesson.lessonContent?.videoUrl || '',
+      videoStart: lesson.lessonContent?.videoStart || 0,
+      videoEnd: lesson.lessonContent?.videoEnd || 0,
+    }
+  })
 
   const [activeCodeTab, setActiveCodeTab] = useState('javascript')
   const [isDirty, setIsDirty] = useState(false)
   const [activeSection, setActiveSection] = useState('basic')
   const [sublessons, setSublessons] = useState<any[]>([])
   const [loadingSublessons, setLoadingSublessons] = useState(false)
+
+  // State for database exercises
+  const [dbQuizzes, setDbQuizzes] = useState<DbQuiz[]>([])
+  const [dbCodeChallenges, setDbCodeChallenges] = useState<DbCodeChallenge[]>([])
+  const [dbFillInBlanks, setDbFillInBlanks] = useState<DbFillInBlank[]>([])
+  const [exercisesLoading, setExercisesLoading] = useState(true)
 
   // Fetch sublessons for display purposes only
   useEffect(() => {
@@ -87,6 +111,205 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
     }
   }
 
+  // API functions for database exercises
+  const fetchExercises = useCallback(async () => {
+    try {
+      setExercisesLoading(true)
+      const [quizzesRes, codeChallengesRes, fillInBlanksRes] = await Promise.all([
+        fetch(`/api/exercises/quizzes?lessonId=${lesson.id}`),
+        fetch(`/api/exercises/code-challenges?lessonId=${lesson.id}`),
+        fetch(`/api/exercises/fill-in-blanks?lessonId=${lesson.id}`)
+      ])
+
+      const [quizzesData, codeChallengesData, fillInBlanksData] = await Promise.all([
+        quizzesRes.json(),
+        codeChallengesRes.json(),
+        fillInBlanksRes.json()
+      ])
+
+      if (quizzesData.success) setDbQuizzes(quizzesData.quizzes || [])
+      if (codeChallengesData.success) setDbCodeChallenges(codeChallengesData.codeChallenges || [])
+      if (fillInBlanksData.success) setDbFillInBlanks(fillInBlanksData.fillInBlanks || [])
+    } catch (error) {
+      console.error('Error fetching exercises:', error)
+    } finally {
+      setExercisesLoading(false)
+    }
+  }, [lesson.id])
+
+  const createQuiz = async (quizData: Partial<DbQuiz>) => {
+    try {
+      const response = await fetch('/api/exercises/quizzes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...quizData,
+          lessonId: lesson.id,
+          index: dbQuizzes.length
+        })
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbQuizzes(prev => [...prev, result.quiz])
+      }
+      return result
+    } catch (error) {
+      console.error('Error creating quiz:', error)
+      throw error
+    }
+  }
+
+  const updateQuiz = async (quizId: number, updates: Partial<DbQuiz>) => {
+    try {
+      const response = await fetch(`/api/exercises/quizzes/${quizId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbQuizzes(prev => prev.map(q => q.id === quizId ? result.quiz : q))
+      }
+      return result
+    } catch (error) {
+      console.error('Error updating quiz:', error)
+      throw error
+    }
+  }
+
+  const deleteQuiz = async (quizId: number) => {
+    try {
+      const response = await fetch(`/api/exercises/quizzes/${quizId}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbQuizzes(prev => prev.filter(q => q.id !== quizId))
+      }
+      return result
+    } catch (error) {
+      console.error('Error deleting quiz:', error)
+      throw error
+    }
+  }
+
+  const createCodeChallenge = async (challengeData: Partial<DbCodeChallenge>) => {
+    try {
+      const response = await fetch('/api/exercises/code-challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...challengeData,
+          lessonId: lesson.id,
+          index: dbCodeChallenges.length
+        })
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbCodeChallenges(prev => [...prev, result.codeChallenge])
+      }
+      return result
+    } catch (error) {
+      console.error('Error creating code challenge:', error)
+      throw error
+    }
+  }
+
+  const updateCodeChallenge = async (challengeId: number, updates: Partial<DbCodeChallenge>) => {
+    try {
+      const response = await fetch(`/api/exercises/code-challenges/${challengeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbCodeChallenges(prev => prev.map(c => c.id === challengeId ? result.codeChallenge : c))
+      }
+      return result
+    } catch (error) {
+      console.error('Error updating code challenge:', error)
+      throw error
+    }
+  }
+
+  const deleteCodeChallenge = async (challengeId: number) => {
+    try {
+      const response = await fetch(`/api/exercises/code-challenges/${challengeId}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbCodeChallenges(prev => prev.filter(c => c.id !== challengeId))
+      }
+      return result
+    } catch (error) {
+      console.error('Error deleting code challenge:', error)
+      throw error
+    }
+  }
+
+  const createFillInBlank = async (fillInBlankData: Partial<DbFillInBlank>) => {
+    try {
+      const response = await fetch('/api/exercises/fill-in-blanks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...fillInBlankData,
+          lessonId: lesson.id,
+          index: dbFillInBlanks.length
+        })
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbFillInBlanks(prev => [...prev, result.fillInBlank])
+      }
+      return result
+    } catch (error) {
+      console.error('Error creating fill-in-blank:', error)
+      throw error
+    }
+  }
+
+  const updateFillInBlank = async (fillInBlankId: number, updates: Partial<DbFillInBlank>) => {
+    try {
+      const response = await fetch(`/api/exercises/fill-in-blanks/${fillInBlankId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbFillInBlanks(prev => prev.map(f => f.id === fillInBlankId ? result.fillInBlank : f))
+      }
+      return result
+    } catch (error) {
+      console.error('Error updating fill-in-blank:', error)
+      throw error
+    }
+  }
+
+  const deleteFillInBlank = async (fillInBlankId: number) => {
+    try {
+      const response = await fetch(`/api/exercises/fill-in-blanks/${fillInBlankId}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
+      if (result.success) {
+        setDbFillInBlanks(prev => prev.filter(f => f.id !== fillInBlankId))
+      }
+      return result
+    } catch (error) {
+      console.error('Error deleting fill-in-blank:', error)
+      throw error
+    }
+  }
+
+  // Load exercises when component mounts or lesson changes
+  useEffect(() => {
+    fetchExercises()
+  }, [fetchExercises])
+
   const { status, forceSave } = useAutoSave(formData, {
     onSave: saveLesson,
     debounceMs: 2000,
@@ -114,6 +337,263 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
     { id: 'python', label: 'Python', icon: Circle },
     { id: 'typescript', label: 'TypeScript', icon: Triangle }
   ]
+
+  const renderExercisesEditor = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Puzzle className="h-5 w-5 mr-2" />
+              Exercises
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={() => createQuiz({ title: 'New Quiz' })} size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Quiz
+              </Button>
+              <Button onClick={() => createCodeChallenge({ title: 'New Code Challenge', description: '', starterCode: '{}', solution: '{}', tests: '{}' })} size="sm" className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Code Challenge
+              </Button>
+              <Button onClick={() => createFillInBlank({ title: 'New Fill in Blank', text: '' })} size="sm" className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Fill in Blank
+              </Button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {exercisesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-500">Loading exercises...</span>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Database Quizzes */}
+              {dbQuizzes.map((quiz) => (
+                <Card key={`quiz-${quiz.id}`} className="border-l-4 border-l-blue-400">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Brain className="h-5 w-5 text-blue-500" />
+                        <Input
+                          value={quiz.title}
+                          onChange={(e) => updateQuiz(quiz.id, { title: e.target.value })}
+                          className="font-medium text-lg"
+                          placeholder="Quiz title..."
+                        />
+                      </div>
+                      <Button
+                        onClick={() => deleteQuiz(quiz.id)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {renderDbQuizEditor(quiz)}
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {/* Database Code Challenges */}
+              {dbCodeChallenges.map((challenge) => (
+                <Card key={`challenge-${challenge.id}`} className="border-l-4 border-l-green-400">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Code className="h-5 w-5 text-green-500" />
+                        <Input
+                          value={challenge.title}
+                          onChange={(e) => updateCodeChallenge(challenge.id, { title: e.target.value })}
+                          className="font-medium text-lg"
+                          placeholder="Code challenge title..."
+                        />
+                      </div>
+                      <Button
+                        onClick={() => deleteCodeChallenge(challenge.id)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {renderDbCodeChallengeEditor(challenge)}
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {/* Database Fill-in-Blanks */}
+              {dbFillInBlanks.map((fillInBlank) => (
+                <Card key={`fillinblank-${fillInBlank.id}`} className="border-l-4 border-l-purple-400">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Edit3 className="h-5 w-5 text-purple-500" />
+                        <Input
+                          value={fillInBlank.title}
+                          onChange={(e) => updateFillInBlank(fillInBlank.id, { title: e.target.value })}
+                          className="font-medium text-lg"
+                          placeholder="Fill-in-blank title..."
+                        />
+                      </div>
+                      <Button
+                        onClick={() => deleteFillInBlank(fillInBlank.id)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {renderDbFillInBlankEditor(fillInBlank)}
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Show empty state if no exercises */}
+              {dbQuizzes.length === 0 && dbCodeChallenges.length === 0 && dbFillInBlanks.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="mb-4">No exercises yet. Add quizzes, code challenges, or fill-in-the-blank exercises.</p>
+                  <div className="flex justify-center space-x-2">
+                    <Button onClick={() => createQuiz({ title: 'New Quiz' })} variant="outline">
+                      <Brain className="h-4 w-4 mr-2" />
+                      Add First Quiz
+                    </Button>
+                    <Button onClick={() => createCodeChallenge({ title: 'New Code Challenge', description: '', starterCode: '{}', solution: '{}', tests: '{}' })} variant="outline">
+                      <Code className="h-4 w-4 mr-2" />
+                      Add Code Challenge
+                    </Button>
+                    <Button onClick={() => createFillInBlank({ title: 'New Fill in Blank', text: '' })} variant="outline">
+                      <Edit3 className="h-4 w-4 mr-2" />
+                      Add Fill-in-Blank
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+
+  // New database exercise render functions
+  const renderDbQuizEditor = (quiz: DbQuiz) => {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Description</Label>
+            <Textarea
+              value={quiz.description || ''}
+              onChange={(e) => updateQuiz(quiz.id, { description: e.target.value })}
+              placeholder="Quiz description..."
+              className="mt-1"
+              rows={2}
+            />
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Passing Score (%)</Label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              value={quiz.passingScore || 70}
+              onChange={(e) => updateQuiz(quiz.id, { passingScore: parseInt(e.target.value) || 70 })}
+              className="mt-1"
+            />
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id={`show-explanations-${quiz.id}`}
+            checked={quiz.showExplanations}
+            onChange={(e) => updateQuiz(quiz.id, { showExplanations: e.target.checked })}
+          />
+          <Label htmlFor={`show-explanations-${quiz.id}`} className="text-sm">Show explanations</Label>
+        </div>
+        <div className="text-sm text-gray-500">
+          Questions: {quiz.questions?.length || 0} (managed separately)
+        </div>
+      </div>
+    )
+  }
+
+  const renderDbCodeChallengeEditor = (challenge: DbCodeChallenge) => {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Description</Label>
+          <Textarea
+            value={challenge.description || ''}
+            onChange={(e) => updateCodeChallenge(challenge.id, { description: e.target.value })}
+            placeholder="Challenge description..."
+            className="mt-1"
+            rows={3}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Difficulty</Label>
+            <select
+              value={challenge.difficulty}
+              onChange={(e) => updateCodeChallenge(challenge.id, { difficulty: e.target.value as 'easy' | 'medium' | 'hard' })}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </div>
+        <div className="text-sm text-gray-500">
+          Code editing available in full editor mode
+        </div>
+      </div>
+    )
+  }
+
+  const renderDbFillInBlankEditor = (fillInBlank: DbFillInBlank) => {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Text with Blanks</Label>
+          <Textarea
+            value={fillInBlank.text}
+            onChange={(e) => updateFillInBlank(fillInBlank.id, { text: e.target.value })}
+            placeholder="Enter text with ___BLANK___ markers..."
+            className="mt-1"
+            rows={3}
+          />
+        </div>
+        <div>
+          <Label className="text-sm font-medium text-gray-700">Explanation</Label>
+          <Textarea
+            value={fillInBlank.explanation || ''}
+            onChange={(e) => updateFillInBlank(fillInBlank.id, { explanation: e.target.value })}
+            placeholder="Optional explanation..."
+            className="mt-1"
+            rows={2}
+          />
+        </div>
+        <div className="text-sm text-gray-500">
+          Blanks: {fillInBlank.blanks?.length || 0} (managed separately)
+        </div>
+      </div>
+    )
+  }
 
   const addHint = () => {
     const newHint: Hint = {
@@ -863,6 +1343,10 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
                 <BookOpen className="h-4 w-4" />
                 <span>Docs</span>
               </TabsTrigger>
+              <TabsTrigger value="exercises" className="flex items-center space-x-2">
+                <Puzzle className="h-4 w-4" />
+                <span>Exercises</span>
+              </TabsTrigger>
               {formData.lessonType === 'video' && (
                 <TabsTrigger value="video" className="flex items-center space-x-2">
                   <Video className="h-4 w-4" />
@@ -889,6 +1373,10 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
 
             <TabsContent value="docs" className="mt-0">
               {renderDocumentationEditor()}
+            </TabsContent>
+
+            <TabsContent value="exercises" className="mt-0">
+              {renderExercisesEditor()}
             </TabsContent>
 
             {formData.lessonType === 'video' && (
@@ -918,5 +1406,5 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
       preview={previewContent}
       defaultLayout={[60, 40]}
     />
-  )
-}
+    )
+  }

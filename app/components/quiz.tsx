@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, X, RotateCcw, Trophy } from "lucide-react";
+import { Check, X, RotateCcw, Trophy, FileQuestion } from "lucide-react";
 
 interface QuizQuestion {
   id: string;
@@ -216,6 +216,31 @@ export function Quiz({ quizData, onComplete }: QuizProps) {
   }
   console.log("questions", questions);
   const question = questions[currentQuestion];
+
+  // Handle case where there are no questions
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto flex flex-col justify-center min-h-[60vh]">
+        <div className="text-center">
+          <FileQuestion size={64} className="text-gray-400 mb-4 mx-auto" />
+          <h2 className="text-xl font-semibold mb-2">No Questions Available</h2>
+          <p className="text-gray-600">This quiz doesn't have any questions yet.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where question is undefined (shouldn't happen with above check, but safety)
+  if (!question) {
+    return (
+      <div className="max-w-2xl mx-auto flex flex-col justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2 text-red-600">Error</h2>
+          <p className="text-gray-600">Unable to load quiz question.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col justify-center min-h-[60vh]">

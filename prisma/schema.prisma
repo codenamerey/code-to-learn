@@ -92,6 +92,12 @@ model Lesson {
   lessonContent LessonContent?
   sublessons    Sublesson[]
   progress      CourseProgress[]
+  
+  // Exercise relationships
+  quizzes       Quiz[]
+  codeChallenge CodeChallenge[]
+  fillInBlanks  FillInBlank[]
+  
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -131,6 +137,12 @@ model Sublesson {
   lesson          Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   sublessonContent SublessonContent?
   progress        SublessonProgress[]
+  
+  // Exercise relationships
+  quizzes         Quiz[]
+  codeChallenge   CodeChallenge[]
+  fillInBlanks    FillInBlank[]
+  
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -168,4 +180,99 @@ model SublessonProgress {
 
   @@unique([userId, sublessonId])
   @@map("sublesson_progress")
+}
+
+model Quiz {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  passingScore Int      @default(70)
+  timeLimit   Int?      // in minutes
+  showExplanations Boolean @default(true)
+  index       Int       @default(0)
+  
+  // Foreign key relationships
+  lessonId    Int?
+  lesson      Lesson?   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  sublessonId Int?
+  sublesson   Sublesson? @relation(fields: [sublessonId], references: [id], onDelete: Cascade)
+  
+  questions   QuizQuestion[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            Int      @id @default(autoincrement())
+  quizId        Int
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question      String
+  type          String   @default("multiple_choice") // multiple_choice, true_false, fill_blank
+  options       Json?    // Array of options for multiple choice
+  correctAnswer String
+  explanation   String?
+  index         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("quiz_questions")
+}
+
+model CodeChallenge {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  difficulty  String    @default("easy") // easy, medium, hard
+  starterCode Json      @default("{}") // language -> code mapping
+  solution    Json      @default("{}") // language -> solution mapping
+  tests       Json      @default("{}") // language -> test code mapping
+  hints       Json      @default("[]") // Array of hint strings
+  index       Int       @default(0)
+  
+  // Foreign key relationships  
+  lessonId    Int?
+  lesson      Lesson?   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  sublessonId Int?
+  sublesson   Sublesson? @relation(fields: [sublessonId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("code_challenges")
+}
+
+model FillInBlank {
+  id          Int       @id @default(autoincrement())
+  title       String
+  text        String    // Text with ___BLANK_1___ placeholders
+  explanation String?
+  index       Int       @default(0)
+  
+  // Foreign key relationships
+  lessonId    Int?
+  lesson      Lesson?   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  sublessonId Int?
+  sublesson   Sublesson? @relation(fields: [sublessonId], references: [id], onDelete: Cascade)
+  
+  blanks      FillInBlankAnswer[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("fill_in_blanks")
+}
+
+model FillInBlankAnswer {
+  id              Int         @id @default(autoincrement())
+  fillInBlankId   Int
+  fillInBlank     FillInBlank @relation(fields: [fillInBlankId], references: [id], onDelete: Cascade)
+  blankId         String      // BLANK_1, BLANK_2, etc.
+  correctAnswer   String
+  alternatives    Json        @default("[]") // Array of alternative correct answers
+  caseSensitive   Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("fill_in_blank_answers")
 }

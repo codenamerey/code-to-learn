@@ -30,21 +30,55 @@ const LANGUAGE_DEFAULT_CODE: Record<SupportedLanguage, string> = {
 import "@/lib/visualizers";
 
 interface QuizQuestion {
-  id: string;
+  id: number;
   question: string;
-  type: "multiple_choice" | "true_false" | "fill_blank" | "matching";
+  type: "multiple_choice" | "true_false";
   options?: string[];
-  correctAnswer: string | string[];
+  correctAnswer: string;
   explanation?: string;
   points?: number;
 }
 
-interface QuizData {
-  questions: QuizQuestion[];
+interface Quiz {
+  id: number;
+  title?: string;
+  description?: string;
   passingScore?: number;
   timeLimit?: number;
   shuffleQuestions?: boolean;
   showExplanations?: boolean;
+  questions: QuizQuestion[];
+}
+
+interface CodeChallenge {
+  id: number;
+  title?: string;
+  description?: string;
+  difficulty?: string;
+  defaultCode?: string;
+  testCode?: string;
+  solution?: string;
+}
+
+interface FillInBlankAnswer {
+  id: number;
+  blankIndex: number;
+  correctAnswer: string;
+  acceptableAnswers?: string[];
+}
+
+interface FillInBlank {
+  id: number;
+  title?: string;
+  description?: string;
+  content: string;
+  blanks: FillInBlankAnswer[];
+}
+
+interface ExercisesData {
+  quizzes: Quiz[];
+  codeCharlenges: CodeChallenge[];
+  fillInBlanks: FillInBlank[];
 }
 
 interface SublessonData {
@@ -62,7 +96,7 @@ interface SublessonData {
   hints: any;
   testRunner?: string;
   demoData?: string;
-  quizData?: QuizData;
+  exercises: ExercisesData;
 }
 
 interface LessonData {
@@ -79,7 +113,7 @@ interface LessonData {
   functionName?: string;
   includeVisualizer?: boolean;
   visualizerConfig?: VisualizerConfig;
-  quizData?: QuizData;
+  exercises: ExercisesData;
   sublessons?: SublessonData[];
 }
 
@@ -160,7 +194,8 @@ export default function LessonPage() {
         } else {
           setSublessonCode("");
         }
-        if (sublesson.defaultCode && sublesson.quizData) {
+        // Set tab based on available content - if has code challenges or code, default to code tab
+        if (sublesson.defaultCode && (sublesson.exercises.quizzes.length > 0 || sublesson.exercises.fillInBlanks.length > 0)) {
           setActiveTab("code");
         }
       }
@@ -336,7 +371,8 @@ export default function LessonPage() {
       });
       const data = await response.json();
       if (data.success) {
-        setLessonData({ ...lessonData, quizData: data.quizData });
+        // Refresh lesson data to get new exercises
+        await fetchLessonData();
       }
     } catch (err) {
       console.error("Error generating quiz:", err);
@@ -423,7 +459,8 @@ export default function LessonPage() {
   const sublessons = lessonData.sublessons || [];
   const hasSublessons = sublessons.length > 0;
   const activeSublessonData = activeSublesson ? sublessons.find(s => s.id === activeSublesson) : null;
-  const hasBothCodeAndQuiz = activeSublessonData?.defaultCode && activeSublessonData?.quizData;
+  const hasBothCodeAndQuiz = activeSublessonData?.defaultCode && 
+    (activeSublessonData?.exercises.quizzes.length > 0 || activeSublessonData?.exercises.fillInBlanks.length > 0);
 
   const renderVideo = (videoUrl?: string, videoStart?: number, videoEnd?: number, title?: string) => {
     if (videoStart === undefined || videoStart === null) return null;
@@ -466,8 +503,64 @@ export default function LessonPage() {
     </>
   );
 
-  const renderQuizPanel = (quizData: QuizData | undefined, onGenerate?: () => void, isGenerating?: boolean) => {
-    if (!quizData) {
+  // Convert database quiz format to legacy format for Quiz component  
+  const convertQuizToLegacyFormat = (quiz: Quiz): any => {
+    // Only include multiple choice and true/false questions for the Quiz component
+    const quizQuestions = quiz.questions.filter(q => 
+      q.type === "multiple_choice" || q.type === "true_false"
+    );
+    
+    console.log('Quiz conversion:', {
+      originalQuestions: quiz.questions.length,
+      filteredQuestions: quizQuestions.length,
+      questionTypes: quiz.questions.map(q => q.type)
+    });
+    
+    return {
+      questions: quizQuestions.map(q => ({
+        id: q.id.toString(),
+        question: q.question,
+        type: q.type,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation,
+        points: q.points
+      })),
+      passingScore: quiz.passingScore,
+      timeLimit: quiz.timeLimit,
+      shuffleQuestions: quiz.shuffleQuestions,
+      showExplanations: quiz.showExplanations
+    };
+  };
+
+  // Convert database fill-in-blank format to legacy format for FillBlank component
+  const convertFillBlankToLegacyFormat = (fillBlank: FillInBlank): any => {
+    return {
+      type: "fill_blank" as const,
+      questions: [{
+        id: fillBlank.id.toString(),
+        text: fillBlank.content,
+        blanks: fillBlank.blanks.map(blank => ({
+          id: blank.id.toString(),
+          label: `blank_${blank.blankIndex}`,
+          answer: blank.correctAnswer
+        })),
+        explanation: fillBlank.description
+      }],
+      passingScore: 70,
+      showExplanations: true
+    };
+  };
+
+  const renderQuizPanel = (exercises: ExercisesData | undefined, onGenerate?: () => void, isGenerating?: boolean) => {
+    console.log('renderQuizPanel called with:', {
+      exercises,
+      hasQuizzes: exercises?.quizzes?.length || 0,
+      hasFillBlanks: exercises?.fillInBlanks?.length || 0
+    });
+    
+    if (!exercises || (exercises.quizzes.length === 0 && exercises.fillInBlanks.length === 0)) {
+      console.log('No exercises available, showing generate button');
       return (
         <div className="flex flex-col items-center justify-center h-full">
           <FileQuestion size={64} className="text-gray-400 mb-4" />
@@ -485,14 +578,44 @@ export default function LessonPage() {
         </div>
       );
     }
-    return <Quiz quizData={quizData} onComplete={handleQuizComplete} />;
+    
+    // Render the first available quiz
+    if (exercises.quizzes.length > 0) {
+      console.log('Rendering quiz:', exercises.quizzes[0]);
+      const legacyQuizData = convertQuizToLegacyFormat(exercises.quizzes[0]);
+      console.log('Legacy quiz data:', legacyQuizData);
+      
+      // Check if the converted quiz has questions
+      if (!legacyQuizData.questions || legacyQuizData.questions.length === 0) {
+        console.log('Quiz has no valid questions after conversion');
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <FileQuestion size={64} className="text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Quiz Has No Questions</h2>
+            <p className="text-gray-600">This quiz needs questions to be added.</p>
+          </div>
+        );
+      }
+      
+      return <Quiz quizData={legacyQuizData} onComplete={handleQuizComplete} />;
+    }
+    
+    // If no quizzes but has fill-in-blanks, render those
+    if (exercises.fillInBlanks.length > 0) {
+      console.log('Rendering fill-in-blank:', exercises.fillInBlanks[0]);
+      const legacyFillBlankData = convertFillBlankToLegacyFormat(exercises.fillInBlanks[0]);
+      return <FillBlank data={legacyFillBlankData} onComplete={handleQuizComplete} />;
+    }
+    
+    return null;
   };
 
-  const renderFillBlankPanel = (fillData: any) => {
-    if (!fillData) return null;
+  const renderFillBlankPanel = (exercises: ExercisesData | undefined) => {
+    if (!exercises || exercises.fillInBlanks.length === 0) return null;
+    const legacyFillBlankData = convertFillBlankToLegacyFormat(exercises.fillInBlanks[0]);
     return (
       <div className="h-full overflow-y-auto p-4">
-        <FillBlank data={fillData} onComplete={handleQuizComplete} />
+        <FillBlank data={legacyFillBlankData} onComplete={handleQuizComplete} />
       </div>
     );
   };
@@ -503,6 +626,27 @@ export default function LessonPage() {
 
     const type = isSublessonMode ? data.lessonType : lessonType;
     const showBoth = isSublessonMode && hasBothCodeAndQuiz;
+
+    console.log('renderContent called:', {
+      isSublessonMode,
+      type,
+      hasExercises: data.exercises ? (data.exercises.quizzes.length + data.exercises.fillInBlanks.length) : 0,
+      showBoth
+    });
+
+    // Special case: if sublesson has no exercises but main lesson does, show main lesson exercises
+    if (isSublessonMode && data.exercises && 
+        data.exercises.quizzes.length === 0 && 
+        data.exercises.fillInBlanks.length === 0 &&
+        lessonData?.exercises && 
+        (lessonData.exercises.quizzes.length > 0 || lessonData.exercises.fillInBlanks.length > 0)) {
+      console.log('Sublesson has no exercises, falling back to main lesson exercises');
+      return (
+        <div className="h-full overflow-y-auto p-4">
+          {renderQuizPanel(lessonData.exercises)}
+        </div>
+      );
+    }
 
     if (showBoth) {
       return (
@@ -538,7 +682,7 @@ export default function LessonPage() {
               </ResizablePanelGroup>
             ) : (
               <div className="p-4">
-                {renderQuizPanel(data.quizData)}
+                {renderQuizPanel(data.exercises)}
               </div>
             )}
           </div>
@@ -560,12 +704,12 @@ export default function LessonPage() {
     }
 
     if (type === "fill_blank") {
-      return renderFillBlankPanel(data.quizData);
+      return renderFillBlankPanel(data.exercises);
     }
 
     return (
       <div className="h-full overflow-y-auto p-4">
-        {renderQuizPanel(data.quizData)}
+        {renderQuizPanel(data.exercises)}
       </div>
     );
   };
