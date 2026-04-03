@@ -33,8 +33,9 @@ export interface DbCodeChallenge {
   description: string;
   difficulty: string;
   starterCode: any;
-  solution: any;
+  abstractedCode: any;
   tests: any;
+  demoData: any;
   hints: any;
   index: number;
   lessonId?: number;

@@ -10,7 +10,7 @@ export function Output({
 }) {
   // Helper function to create test result tabs
   const passedCount = useMemo(() => {
-    if (!tests) return 0;
+    if (!tests || !Array.isArray(tests)) return 0;
     return tests.filter((test) => test.passed).length;
   }, [tests]);
 

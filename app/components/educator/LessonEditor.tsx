@@ -352,7 +352,7 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
                 <Plus className="h-4 w-4 mr-1" />
                 Add Quiz
               </Button>
-              <Button onClick={() => createCodeChallenge({ title: 'New Code Challenge', description: '', starterCode: '{}', solution: '{}', tests: '{}' })} size="sm" className="bg-green-600 hover:bg-green-700">
+              <Button onClick={() => createCodeChallenge({ title: 'New Code Challenge', description: '', starterCode: '{}', abstractedCode: '{}', tests: '{}', demoData: '{}' })} size="sm" className="bg-green-600 hover:bg-green-700">
                 <Plus className="h-4 w-4 mr-1" />
                 Add Code Challenge
               </Button>
@@ -470,7 +470,7 @@ export function LessonEditor({ lesson, courseId, onSave }: LessonEditorProps) {
                       <Brain className="h-4 w-4 mr-2" />
                       Add First Quiz
                     </Button>
-                    <Button onClick={() => createCodeChallenge({ title: 'New Code Challenge', description: '', starterCode: '{}', solution: '{}', tests: '{}' })} variant="outline">
+                    <Button onClick={() => createCodeChallenge({ title: 'New Code Challenge', description: '', starterCode: '{}', abstractedCode: '{}', tests: '{}', demoData: '{}' })} variant="outline">
                       <Code className="h-4 w-4 mr-2" />
                       Add Code Challenge
                     </Button>

@@ -44,7 +44,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         description: body.description,
         difficulty: body.difficulty,
         starterCode: body.starterCode,
-        solution: body.solution,
+        abstractedCode: body.abstractedCode,
+        demoData: body.demoData,
+        solution: body.abstractedCode || body.solution, // Keep solution in sync for backward compatibility
         tests: body.tests,
         hints: body.hints,
         index: body.index,

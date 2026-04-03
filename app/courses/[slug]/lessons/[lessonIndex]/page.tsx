@@ -41,37 +41,51 @@ interface QuizQuestion {
 
 interface Quiz {
   id: number;
-  title?: string;
+  title: string;
   description?: string;
   passingScore?: number;
   timeLimit?: number;
-  shuffleQuestions?: boolean;
   showExplanations?: boolean;
+  index: number;
+  videoUrl?: string;
+  videoStart?: number;
+  videoEnd?: number;
   questions: QuizQuestion[];
 }
 
 interface CodeChallenge {
   id: number;
-  title?: string;
-  description?: string;
+  title: string;
+  description: string;
   difficulty?: string;
-  defaultCode?: string;
-  testCode?: string;
-  solution?: string;
+  starterCode?: any;
+  abstractedCode?: any;
+  tests?: any;
+  demoData?: any;
+  hints?: any;
+  index: number;
+  videoUrl?: string;
+  videoStart?: number;
+  videoEnd?: number;
 }
 
 interface FillInBlankAnswer {
   id: number;
-  blankIndex: number;
+  blankId: string;
   correctAnswer: string;
-  acceptableAnswers?: string[];
+  alternatives?: string[];
+  caseSensitive?: boolean;
 }
 
 interface FillInBlank {
   id: number;
-  title?: string;
-  description?: string;
-  content: string;
+  title: string;
+  text: string;
+  explanation?: string;
+  index: number;
+  videoUrl?: string;
+  videoStart?: number;
+  videoEnd?: number;
   blanks: FillInBlankAnswer[];
 }
 
@@ -154,6 +168,9 @@ export default function LessonPage() {
   const [activeSublesson, setActiveSublesson] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "quiz">("code");
   const [language, setLanguage] = useState<SupportedLanguage>("javascript");
+  const [challengeCode, setChallengeCode] = useState<{[key: number]: string}>({});
+  const [challengeOutput, setChallengeOutput] = useState<{[key: number]: string}>({});
+  const [challengeTests, setChallengeTests] = useState<{[key: number]: any[]}>({});
 
   useEffect(() => {
     if (slug) {
@@ -229,6 +246,15 @@ export default function LessonPage() {
 
       const data = await response.json();
       setLessonData(data);
+
+      // Initialize code challenge state with starter code
+      if (data.exercises?.codeCharlenges?.length > 0) {
+        const newChallengeCode: {[key: number]: string} = {};
+        data.exercises.codeCharlenges.forEach((challenge: CodeChallenge) => {
+          newChallengeCode[challenge.id] = challenge.starterCode?.[language] || LANGUAGE_DEFAULT_CODE[language];
+        });
+        setChallengeCode(newChallengeCode);
+      }
 
       if (data.lessonType === "code") {
         if (isLangChange) {
@@ -358,6 +384,36 @@ export default function LessonPage() {
     const sublesson = lessonData.sublessons.find(s => s.id === activeSublesson);
     if (!sublesson) return;
     runCode(sublessonCode, sublesson.abstractedCode, sublesson.testRunner, sublesson.demoData);
+  };
+
+  const executeChallengeCode = async (challengeId: number, codeChallenge: CodeChallenge) => {
+    const currentCode = challengeCode[challengeId] || codeChallenge.starterCode?.[language] || LANGUAGE_DEFAULT_CODE[language];
+    const abstractedCode = codeChallenge.abstractedCode?.[language] || "";
+    const testCode = codeChallenge.tests?.[language] || "";
+    const demoData = codeChallenge.demoData?.[language] || "";
+    
+    setIsExecuting(true);
+    setChallengeOutput(prev => ({ ...prev, [challengeId]: "Executing..." }));
+    
+    try {
+      const { executeCode } = await import("@/lib/execution");
+      const result = await executeCode(
+        language,
+        currentCode,
+        abstractedCode,
+        testCode,
+        demoData,
+        "main",
+        (statusMsg: string) => setChallengeOutput(prev => ({ ...prev, [challengeId]: statusMsg })),
+      );
+
+      setChallengeOutput(prev => ({ ...prev, [challengeId]: result.output }));
+      setChallengeTests(prev => ({ ...prev, [challengeId]: Array.isArray(result.tests) ? result.tests : [] }));
+    } catch (err) {
+      setChallengeOutput(prev => ({ ...prev, [challengeId]: `Error: ${(err as Error).message}` }));
+      setChallengeTests(prev => ({ ...prev, [challengeId]: [] }));
+    }
+    setIsExecuting(false);
   };
 
   const generateQuiz = async () => {
@@ -528,7 +584,6 @@ export default function LessonPage() {
       })),
       passingScore: quiz.passingScore,
       timeLimit: quiz.timeLimit,
-      shuffleQuestions: quiz.shuffleQuestions,
       showExplanations: quiz.showExplanations
     };
   };
@@ -539,13 +594,13 @@ export default function LessonPage() {
       type: "fill_blank" as const,
       questions: [{
         id: fillBlank.id.toString(),
-        text: fillBlank.content,
+        text: fillBlank.text,
         blanks: fillBlank.blanks.map(blank => ({
           id: blank.id.toString(),
-          label: `blank_${blank.blankIndex}`,
+          label: blank.blankId,
           answer: blank.correctAnswer
         })),
-        explanation: fillBlank.description
+        explanation: fillBlank.explanation
       }],
       passingScore: 70,
       showExplanations: true
@@ -556,15 +611,16 @@ export default function LessonPage() {
     console.log('renderQuizPanel called with:', {
       exercises,
       hasQuizzes: exercises?.quizzes?.length || 0,
-      hasFillBlanks: exercises?.fillInBlanks?.length || 0
+      hasFillBlanks: exercises?.fillInBlanks?.length || 0,
+      hasCodeChallenges: exercises?.codeCharlenges?.length || 0
     });
     
-    if (!exercises || (exercises.quizzes.length === 0 && exercises.fillInBlanks.length === 0)) {
+    if (!exercises || (exercises.quizzes.length === 0 && exercises.fillInBlanks.length === 0 && exercises.codeCharlenges.length === 0)) {
       console.log('No exercises available, showing generate button');
       return (
         <div className="flex flex-col items-center justify-center h-full">
           <FileQuestion size={64} className="text-gray-400 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No Quiz Available</h2>
+          <h2 className="text-xl font-semibold mb-2">No Exercises Available</h2>
           {onGenerate && (
             <button
               onClick={onGenerate}
@@ -578,47 +634,147 @@ export default function LessonPage() {
         </div>
       );
     }
-    
-    // Render the first available quiz
-    if (exercises.quizzes.length > 0) {
-      console.log('Rendering quiz:', exercises.quizzes[0]);
-      const legacyQuizData = convertQuizToLegacyFormat(exercises.quizzes[0]);
-      console.log('Legacy quiz data:', legacyQuizData);
-      
-      // Check if the converted quiz has questions
-      if (!legacyQuizData.questions || legacyQuizData.questions.length === 0) {
-        console.log('Quiz has no valid questions after conversion');
-        return (
-          <div className="flex flex-col items-center justify-center h-full">
-            <FileQuestion size={64} className="text-gray-400 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Quiz Has No Questions</h2>
-            <p className="text-gray-600">This quiz needs questions to be added.</p>
-          </div>
-        );
-      }
-      
-      return <Quiz quizData={legacyQuizData} onComplete={handleQuizComplete} />;
-    }
-    
-    // If no quizzes but has fill-in-blanks, render those
-    if (exercises.fillInBlanks.length > 0) {
-      console.log('Rendering fill-in-blank:', exercises.fillInBlanks[0]);
-      const legacyFillBlankData = convertFillBlankToLegacyFormat(exercises.fillInBlanks[0]);
-      return <FillBlank data={legacyFillBlankData} onComplete={handleQuizComplete} />;
-    }
-    
-    return null;
-  };
 
-  const renderFillBlankPanel = (exercises: ExercisesData | undefined) => {
-    if (!exercises || exercises.fillInBlanks.length === 0) return null;
-    const legacyFillBlankData = convertFillBlankToLegacyFormat(exercises.fillInBlanks[0]);
+    // Collect all exercises and sort them by index
+    const allExercises: Array<{
+      type: 'quiz' | 'codeChallenge' | 'fillBlank';
+      data: any;
+      index: number;
+      id: number;
+      title: string;
+    }> = [];
+
+    // Add quizzes
+    exercises.quizzes.forEach(quiz => {
+      allExercises.push({
+        type: 'quiz',
+        data: quiz,
+        index: quiz.index || 0,
+        id: quiz.id,
+        title: quiz.title || `Quiz ${quiz.id}`
+      });
+    });
+
+    // Add code challenges
+    exercises.codeCharlenges?.forEach(challenge => {
+      allExercises.push({
+        type: 'codeChallenge',
+        data: challenge,
+        index: challenge.index || 0,
+        id: challenge.id,
+        title: challenge.title || `Code Challenge ${challenge.id}`
+      });
+    });
+
+    // Add fill-in-blanks
+    exercises.fillInBlanks.forEach(fillBlank => {
+      allExercises.push({
+        type: 'fillBlank',
+        data: fillBlank,
+        index: fillBlank.index || 0,
+        id: fillBlank.id,
+        title: fillBlank.title || `Fill in the Blank ${fillBlank.id}`
+      });
+    });
+
+    // Sort by index, then by ID as secondary sort
+    allExercises.sort((a, b) => {
+      if (a.index !== b.index) return a.index - b.index;
+      return a.id - b.id;
+    });
+
+    console.log('All exercises sorted:', allExercises);
+
+    if (allExercises.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full">
+          <FileQuestion size={64} className="text-gray-400 mb-4" />
+          <h2 className="text-xl font-semibold mb-2">No Valid Exercises</h2>
+          <p className="text-gray-600">The exercises need questions to be added.</p>
+        </div>
+      );
+    }
+
     return (
-      <div className="h-full overflow-y-auto p-4">
-        <FillBlank data={legacyFillBlankData} onComplete={handleQuizComplete} />
+      <div className="space-y-6">
+        {allExercises.map((exercise, exerciseIndex) => (
+          <div key={`${exercise.type}-${exercise.id}`} className="border rounded-lg p-4 bg-white shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                Exercise {exerciseIndex + 1}
+              </span>
+              <h3 className="text-lg font-semibold">{exercise.title}</h3>
+              <span className="text-sm text-gray-500 capitalize">({exercise.type.replace('C', ' C')})</span>
+            </div>
+            
+            {exercise.type === 'quiz' && (() => {
+              const legacyQuizData = convertQuizToLegacyFormat(exercise.data);
+              if (!legacyQuizData.questions || legacyQuizData.questions.length === 0) {
+                return (
+                  <div className="text-center py-4 text-gray-500">
+                    <p>This quiz has no questions yet.</p>
+                  </div>
+                );
+              }
+              return <Quiz quizData={legacyQuizData} onComplete={handleQuizComplete} />;
+            })()}
+            
+            {exercise.type === 'fillBlank' && (() => {
+              const legacyFillBlankData = convertFillBlankToLegacyFormat(exercise.data);
+              return <FillBlank data={legacyFillBlankData} onComplete={handleQuizComplete} />;
+            })()}
+            
+            {exercise.type === 'codeChallenge' && (() => {
+              const codeChallenge = exercise.data;
+              const challengeId = codeChallenge.id;
+              const currentCode = challengeCode[challengeId] || codeChallenge.starterCode?.[language] || LANGUAGE_DEFAULT_CODE[language];
+              const output = challengeOutput[challengeId] || "";
+              const tests = Array.isArray(challengeTests[challengeId]) ? challengeTests[challengeId] : [];
+              
+              return (
+                <div className="border rounded-lg p-4 bg-white">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">{codeChallenge.description || 'Complete the coding challenge below.'}</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded capitalize">
+                        {codeChallenge.difficulty || 'medium'} difficulty
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="h-80 border rounded-lg overflow-hidden bg-gray-50">
+                      <div className="h-full">
+                        <CodeEditor
+                          executeCode={() => executeChallengeCode(challengeId, codeChallenge)}
+                          isExecuting={isExecuting}
+                          code={currentCode}
+                          setCode={(newCode) => setChallengeCode(prev => ({ ...prev, [challengeId]: newCode }))}
+                          language={language}
+                          setLanguage={setLanguage}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="h-80 border rounded-lg overflow-hidden bg-gray-50">
+                      <Output output={output} tests={tests} />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                    <p className="text-sm text-blue-700">
+                      <strong>Challenge:</strong> Write your solution in the code editor and click "Run Snippet" to test it.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        ))}
       </div>
     );
   };
+
 
   const renderContent = (isSublessonMode: boolean) => {
     const data = isSublessonMode ? activeSublessonData : lessonData;
@@ -704,7 +860,11 @@ export default function LessonPage() {
     }
 
     if (type === "fill_blank") {
-      return renderFillBlankPanel(data.exercises);
+      return (
+        <div className="h-full overflow-y-auto p-4">
+          {renderQuizPanel(data.exercises)}
+        </div>
+      );
     }
 
     return (

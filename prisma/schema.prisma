@@ -221,15 +221,17 @@ model QuizQuestion {
 }
 
 model CodeChallenge {
-  id          Int       @id @default(autoincrement())
-  title       String
-  description String
-  difficulty  String    @default("easy") // easy, medium, hard
-  starterCode Json      @default("{}") // language -> code mapping
-  solution    Json      @default("{}") // language -> solution mapping
-  tests       Json      @default("{}") // language -> test code mapping
-  hints       Json      @default("[]") // Array of hint strings
-  index       Int       @default(0)
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String
+  difficulty    String    @default("easy") // easy, medium, hard
+  starterCode   Json      @default("{}") // language -> starter code mapping
+  solution      Json      @default("{}") // DEPRECATED: kept for compatibility - use abstractedCode
+  abstractedCode Json     @default("{}") // language -> abstracted code mapping  
+  tests         Json      @default("{}") // language -> test code mapping
+  demoData      Json      @default("{}") // language -> demo data mapping
+  hints         Json      @default("[]") // Array of hint strings
+  index         Int       @default(0)
   
   // Foreign key relationships  
   lessonId    Int?

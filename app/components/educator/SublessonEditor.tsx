@@ -1080,8 +1080,6 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
   )
 
   const renderVideoEditor = () => {
-    if (formData.lessonType !== 'video') return null
-
     return (
       <Card>
         <CardHeader>
@@ -1467,10 +1465,11 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
 
   const renderDbCodeChallengeEditor = (challenge: DbCodeChallenge) => {
     const starterCode = (challenge.starterCode as Record<string, string>) || {}
-    const solution = (challenge.solution as Record<string, string>) || {}
+    const abstractedCode = (challenge.abstractedCode as Record<string, string>) || {}
     const tests = (challenge.tests as Record<string, string>) || {}
+    const demoData = (challenge.demoData as Record<string, string>) || {}
     
-    const updateChallengeCode = (field: 'starterCode' | 'solution' | 'tests', language: string, code: string) => {
+    const updateChallengeCode = (field: 'starterCode' | 'abstractedCode' | 'tests' | 'demoData', language: string, code: string) => {
       const currentField = (challenge[field] as Record<string, string>) || {}
       updateCodeChallenge(challenge.id, {
         [field]: {
@@ -1557,14 +1556,14 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
           {/* Solution Code Editor */}
           <div>
             <Label className="text-sm font-medium text-gray-700 mb-3 block">
-              Solution Code (Reference solution)
+              Abstracted Code (Hidden implementation)
             </Label>
             <div className="border rounded-lg overflow-hidden">
               <Editor
                 height="200px"
                 language={activeCodeTab}
-                value={solution[activeCodeTab] || ''}
-                onChange={(value) => updateChallengeCode('solution', activeCodeTab, value || '')}
+                value={abstractedCode[activeCodeTab] || ''}
+                onChange={(value) => updateChallengeCode('abstractedCode', activeCodeTab, value || '')}
                 theme="vs-dark"
                 options={{
                   minimap: { enabled: false },
@@ -1589,6 +1588,30 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
                 language={activeCodeTab}
                 value={tests[activeCodeTab] || ''}
                 onChange={(value) => updateChallengeCode('tests', activeCodeTab, value || '')}
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 12,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  padding: { top: 12, bottom: 12 },
+                  scrollBeyondLastLine: false,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Demo Data Editor */}
+          <div>
+            <Label className="text-sm font-medium text-gray-700 mb-3 block">
+              Demo Data (Test data for visualization)
+            </Label>
+            <div className="border rounded-lg overflow-hidden">
+              <Editor
+                height="150px"
+                language={activeCodeTab}
+                value={demoData[activeCodeTab] || ''}
+                onChange={(value) => updateChallengeCode('demoData', activeCodeTab, value || '')}
                 theme="vs-dark"
                 options={{
                   minimap: { enabled: false },
@@ -1991,7 +2014,7 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeSection} onValueChange={setActiveSection} className="h-full flex flex-col">
           <div className="bg-white border-b border-gray-200 px-6">
-            <TabsList className="grid w-full grid-cols-5 bg-gray-100">
+            <TabsList className="grid w-full bg-gray-100" style={{ gridTemplateColumns: `repeat(${formData.lessonType === 'code' ? 6 : 5}, 1fr)` }}>
               <TabsTrigger value="basic" className="flex items-center space-x-2">
                 <FileText className="h-4 w-4" />
                 <span>Basic</span>
@@ -2014,12 +2037,10 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
                 <BookOpen className="h-4 w-4" />
                 <span>Docs</span>
               </TabsTrigger>
-              {formData.lessonType === 'video' && (
-                <TabsTrigger value="video" className="flex items-center space-x-2">
-                  <Video className="h-4 w-4" />
-                  <span>Video</span>
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="video" className="flex items-center space-x-2">
+                <Video className="h-4 w-4" />
+                <span>Video</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -2046,11 +2067,9 @@ export function SublessonEditor({ sublesson, allSublessons, courseId, lessonId, 
               {renderDocumentationEditor()}
             </TabsContent>
 
-            {formData.lessonType === 'video' && (
-              <TabsContent value="video" className="mt-0">
-                {renderVideoEditor()}
-              </TabsContent>
-            )}
+            <TabsContent value="video" className="mt-0">
+              {renderVideoEditor()}
+            </TabsContent>
           </div>
         </Tabs>
       </div>

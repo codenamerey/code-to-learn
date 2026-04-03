@@ -51,6 +51,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         timeLimit: body.timeLimit,
         showExplanations: body.showExplanations,
         index: body.index,
+        videoUrl: body.videoUrl,
+        videoStart: body.videoStart,
+        videoEnd: body.videoEnd,
       },
       include: {
         questions: {
